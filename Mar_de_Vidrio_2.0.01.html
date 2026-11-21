@@ -977,6 +977,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <div class="nav-sep" style="width:100%;margin:8px 0"></div>
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px">ARCHIVO Y COPIAS (EN TU CARPETA DEL PC)</div>
         <button class="panel-btn" onclick="archivarChats()">Archivar todos los chats al PC (mdv_archivo)</button>
+        <button class="panel-btn" onclick="archivarGaleriaAlPC()">Archivar TODA la galeria al PC y liberarla</button>
+        <button class="panel-btn" onclick="limpiarSnapshotsMax()">Limpiar snapshots antiguas de MAX (conserva la ultima)</button>
         <button class="panel-btn" onclick="restaurarChatsDelArchivo()">Recuperar chats desde el archivo</button>
         <button class="panel-btn" onclick="copiaSeguridad()">Copia de seguridad ahora (sin claves)</button>
         <button class="panel-btn" onclick="restaurarUltimaCopia()">Restaurar la última copia</button>
@@ -7711,6 +7713,42 @@ async function restaurarChatsDelArchivo(){
     renderChatList();
     toast('Recuperados ' + n + ' chats (el resto sigue en mdv_archivo)');
   }catch(e){ toast('No se pudo leer mdv_archivo: ' + e.message); }
+}
+async function archivarGaleriaAlPC(){
+  if(!wsHandle){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); return; }
+  if(wsMode === 'read'){ toast('La carpeta esta en Solo leer'); return; }
+  const piezas = galeriaItems.filter(it => it.blob instanceof Blob && it.blob.size && !it.temporal);
+  if(!piezas.length){ toast('La galeria ya esta vacia'); return; }
+  if(!confirm('Copiar ' + piezas.length + ' piezas a mdv_galeria/ en "' + (wsName || 'la carpeta') + '" y liberarlas del navegador? Quedan como archivos en tu disco. No se puede deshacer.')) return;
+  let okc = 0, pesos = 0;
+  const usados = new Set();
+  for(const it of piezas){
+    try{
+      let base = (it.nombre || ('pieza_' + it.uid)).replace(/[^\w.\-]+/g, '_').slice(-60);
+      if(usados.has(base)) base = it.uid.slice(0, 8) + '_' + base;
+      usados.add(base);
+      await wsRawWrite('mdv_galeria/' + base, it.blob);
+      await galIdbDel(it.uid);
+      if(it.url) URL.revokeObjectURL(it.url);
+      pesos += it.blob.size;
+      galeriaItems = galeriaItems.filter(g => g.uid !== it.uid);
+      okc++;
+    }catch(_){ }
+  }
+  renderEstudio();
+  toast('Galeria archivada: ' + okc + '/' + piezas.length + ' piezas (' + wsSize(pesos) + ') en mdv_galeria/');
+}
+async function limpiarSnapshotsMax(){
+  const snaps = Object.keys(localStorage).filter(k => /^moises_max_snap_/.test(k)).sort();
+  if(snaps.length <= 1){ toast('No hay snapshots antiguas de MAX que limpiar'); return; }
+  const viejas = snaps.slice(0, -1);
+  const pesos = viejas.reduce((a, k) => a + (localStorage.getItem(k) || '').length, 0);
+  const fecha = k => { const t = Number(String(k).split('_').pop()); return t ? new Date(t).toLocaleDateString('es-ES') : String(k); };
+  const ultima = fecha(snaps[snaps.length - 1]);
+  if(!confirm('Hay ' + snaps.length + ' snapshots del modulo MAX (datos de otra app en este mismo servidor).\nBorrar las ' + viejas.length + ' mas viejas (' + wsSize(pesos) + '): ' + viejas.map(fecha).join(', ') + '.\nSe conserva la ultima (' + ultima + '). No se puede deshacer.')) return;
+  let n = 0;
+  for(const k of viejas){ try{ localStorage.removeItem(k); n++; }catch(_){ } }
+  toast('Limpiadas ' + n + ' snapshots (' + wsSize(pesos) + ' liberados)');
 }
 async function copiaSeguridad(silencioso){
   if(!wsHandle){ if(!silencioso){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); } return false; }
