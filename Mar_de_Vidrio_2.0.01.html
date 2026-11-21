@@ -8201,6 +8201,7 @@ async function diagnostico(){
       ['Google TTS', 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=es&q=hola', {method:'GET'}],
       ['OVH voz', 'https://nvr-tts-es-es.endpoints.kepler.ai.cloud.ovh.net/api/v1/tts/text_to_audio', {method:'POST', headers:{'Content-Type':'application/json', Accept:'application/octet-stream'}, body:JSON.stringify({encoding:1, language_code:'es-ES', sample_rate_hz:16000, text:'ok', voice_name:'Spanish-ES-Female-1'})}],
       ['Kilo', 'https://ai-gateway.kilo.ai/api/v1/models', {method:'GET'}],
+      ['Stream voz', 'https://api.streamelements.com/kappa/v2/speech?voice=Conchita&text=hola', {method:'GET'}],
       ['OVH chat', 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/models', {method:'GET'}],
       ['Pollinations', 'https://gen.pollinations.ai/text/models', {method:'GET'}],
       ['LLM7', 'https://api.llm7.io/v1/models', {method:'GET'}],
@@ -8626,6 +8627,27 @@ async function audioBufferAMp3(buf){
   const fin = enc.flush();
   if(fin.length) bloques.push(new Int8Array(fin));
   return new Blob(bloques, {type:'audio/mpeg'});
+}
+async function streamTTS(text, signal, voz){
+  if(webMode === 'off') throw new Error('Internet apagado');
+  const limpio = String(text || '').trim();
+  if(!limpio) throw new Error('Sin texto');
+  const vozSE = /Alvaro|Tomas|Pablo|Enrique|Jorge/i.test(String(voz || '')) ? 'Enrique' : 'Conchita';
+  const chunks = ttsChunks(limpio, 400);
+  const parts = [];
+  for(let i = 0; i < chunks.length; i++){
+    if(!chunks[i]) continue;
+    signal?.throwIfAborted();
+    const url = 'https://api.streamelements.com/kappa/v2/speech?voice=' + vozSE + '&text=' + encodeURIComponent(chunks[i]);
+    const plazo = AbortSignal.timeout(20000);
+    const r = await fetch(url, {cache:'no-store', signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+    if(!r.ok) throw new Error('TTS de Stream: HTTP ' + r.status);
+    const b = await r.blob();
+    if(!b.type.startsWith('audio')) throw new Error('TTS de Stream no devolvi\u00f3 audio');
+    parts.push(b);
+    if(i < chunks.length - 1) await mdvSleep(200);
+  }
+  return new Blob(parts, {type:'audio/mpeg'});
 }
 async function googleTTSBlob(text, signal){
   if(webMode === 'off') throw new Error('Internet apagado');
@@ -10291,6 +10313,7 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   if(!limpio) throw new Error((etiqueta || 'Voz') + ': sin texto');
   const intentos = [
     {n:'Edge', f:() => edgeTTS(limpio, voz, rate, signal)},
+    {n:'Stream', f:() => streamTTS(limpio, signal, voz)},
     {n:'Edge 2', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
     {n:'Edge 3', f:() => edgeTTS(limpio, voz, rate, signal)},
