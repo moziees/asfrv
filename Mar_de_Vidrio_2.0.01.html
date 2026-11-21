@@ -9800,7 +9800,7 @@ async function oracleIA(mensajes, signal, opciones = {}){
     const base = local
       ? (m.type === 'chrome' ? 60000 : m.type === 'webllm' ? 120000 : Math.max(60000, Math.min(localNet.firstMs, 300000)))
       : 30000;
-    const plazoMs = Math.max(10000, Math.min(base, Number(opciones.plazoMs) || base));
+    const plazoMs = Math.max(10000, Number(opciones.plazoMs) || base);
     const plazo = AbortSignal.timeout(plazoMs);
     const intento = signal ? AbortSignal.any([signal, plazo]) : plazo;
     try{
@@ -13202,12 +13202,23 @@ async function generateDeckSummaries(signal,opciones={}){
     signal?.throwIfAborted();
     opciones.progreso?.(deckName,indice,uniqueDecks.length);
     const deckCards=oracle.cards.filter(c=>c.deckName===deckName);
-    try{
-      const lectura=await oracleIA(oracleMensajeConjunto(deckCards,deckName),signal,opciones);
-      signal?.throwIfAborted();
-      if(!lectura?.trim() || oracleTextoError(lectura)) throw new Error('No se obtuvo una lectura válida');
-      oracle.deckSummaries[deckName]=lectura.trim();
-    }catch(e){if(signal?.aborted || e.name==='AbortError'){renderDeckSummaries();throw e;}fallos++}
+    let rondas = 0;
+    for(;;){
+      try{
+        const lectura=await oracleIA(oracleMensajeConjunto(deckCards,deckName),signal,opciones);
+        signal?.throwIfAborted();
+        if(!lectura?.trim() || oracleTextoError(lectura)) throw new Error('No se obtuvo una lectura válida');
+        oracle.deckSummaries[deckName]=lectura.trim();
+        break;
+      }catch(e){
+        if(signal?.aborted || e.name==='AbortError'){renderDeckSummaries();throw e;}
+        rondas++;
+        const espera=[15000,30000,45000,60000,90000,120000][Math.min(rondas-1,5)];
+        try{toast('\ud83d\udd01 Lectura de \u00ab'+deckName+'\u00bb: reintentando (intentos: '+rondas+') en '+Math.round(espera/1000)+' s \u00b7 seguira hasta conseguirla')}catch(_){ }
+        await new Promise(r=>setTimeout(r,espera));
+        if(signal?.aborted) throw new DOMException('Detenido','AbortError');
+      }
+    }
     persistOracle();renderDeckSummaries()
   }
   if(fallos)toast('No se pudo generar alguna lectura de mazo. Inténtalo otra vez.');
@@ -13290,7 +13301,7 @@ async function oraclePrepararVideo(cards, controller, imageBatch){
   const readingJob=(async()=>{
     try{
       if(getActive()){
-        const lecturaOpts={sinCascada:true,plazoMs:180000};
+        const lecturaOpts={sinCascada:true,plazoMs:86400000};
         await mdvEnriquecerTodas(cards, lecturaSignal, texto=>{readings=texto;progress();}, lecturaOpts);
         lecturaSignal.throwIfAborted();
         readingProgress=.5;
@@ -13529,8 +13540,24 @@ async function mdvEnriquecerTodas(cards, signal, onProg, opciones){
     const paso = () => '✨ Lectura profunda ' + (i + 1) + '/' + cards.length + ': ' + c.data[2] + ' · ' + mdvFmtSeg((Date.now() - desde) / 1000);
     if(onProg) onProg(paso());
     const latido = setInterval(() => { try{ if(onProg) onProg(paso()); }catch(_){} }, 1000);
+    let ronda = 0;
     try{
-      await oracleEnriquecerCarta(c,cards,signal,opciones);
+      while(true){
+        try{
+          await oracleEnriquecerCarta(c,cards,signal,opciones);
+          break;
+        }catch(e2){
+          if(e2 && e2.name === 'AbortError') throw e2;
+          if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
+          const espera = [15000,30000,45000,60000,90000,120000][Math.min(ronda,5)];
+          ronda++;
+          const aviso = '\u2728 ' + c.data[2] + ': interpretacion no llego (' + ((e2 && e2.message) || 'sin respuesta') + ') \u00b7 reintentando (intentos: ' + ronda + ') en ' + Math.round(espera/1000) + ' s \u00b7 seguira hasta completarla (puedes detener)';
+          try{ toast('\ud83d\udd01 ' + aviso); }catch(_){ }
+          try{ onProg?.(aviso); }catch(_){ }
+          await new Promise(r => setTimeout(r, espera));
+          if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
+        }
+      }
       hechas++;
     }catch(e){ if(e && e.name === 'AbortError') throw e; }
     finally{ clearInterval(latido); }
@@ -13563,9 +13590,24 @@ async function mdvImagenesTodas(cards,signal,onProg,batch){
     if(c.imgBlob) continue;
     batch ||= oracleImageBatch();
     onProg?.('🎨 Imagen '+(i+1)+'/'+cards.length+': '+c.data[2],i/cards.length);
-    const result = await oracleGenImage(c,signal,batch);
-    signal?.throwIfAborted();
-    await oracleGuardarFoto(c,result);
+    let result = null, rondasImg = 0;
+    while(true){
+      if(!result || (result.name === 'Imagen local' && batch.online && webMode !== 'off')){
+        if(result){
+          rondasImg++;
+          const esperaImg=[15000,30000,45000,60000,90000,120000][Math.min(rondasImg-1,5)];
+          try{toast('\ud83d\udd01 Imagen '+(i+1)+' ('+c.data[2]+'): los generadores no llegaron \u00b7 reintentando (intentos: '+rondasImg+') en '+Math.round(esperaImg/1000)+' s \u00b7 seguira hasta conseguirla')}catch(_){ }
+          try{onProg?.('\ud83d\udd01 Imagen '+(i+1)+'/'+cards.length+': reintentando (intentos: '+rondasImg+')',i/cards.length)}catch(_){ }
+          await new Promise(r=>setTimeout(r,esperaImg));
+          batch.failed.clear();
+        }
+        if(signal?.aborted) throw new DOMException('Detenido','AbortError');
+        result = await oracleGenImage(c,signal,batch);
+        signal?.throwIfAborted();
+        if(result && (result.name !== 'Imagen local' || !batch.online || webMode === 'off')) break;
+      }else break;
+    }
+    if(result) await oracleGuardarFoto(c,result);
     renderOracleCards();
   }
 }
@@ -13678,7 +13720,7 @@ async function mdvTiradaCompleta(p, resumen){
     // Las imágenes no dependen de la interpretación: se descargan a la vez que las lecturas.
     const imgJob = mdvImagenesTodas(oracle.cards, signal, (t, f) => { imgTxt = t; imgProg = f || 0; }).then(() => null, e => e);
     updateProg('🧠 Lecturas profundas…', 5, getActive() ? '' : 'Sin modelo activo');
-    const lecturaOpts = {sinCascada:true, plazoMs:180000};
+    const lecturaOpts = {sinCascada:true, plazoMs:86400000};
     const enr = await mdvEnriquecerTodas(oracle.cards, signal, t => {
       const m = /(\d+)\/(\d+)/.exec(t);
       updateProg(t, m ? 5 + (+m[1] / +m[2]) * 11 : 8, '');
