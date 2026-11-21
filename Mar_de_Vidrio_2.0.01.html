@@ -10277,15 +10277,17 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
       if(!opciones?.permitirSilencio) throw e;
       const causa = (e && e.message) || 'no respondió';
       let recuperado = null;
-      const RONDAS = 8, ESPERAS = [15000, 30000, 45000, 60000, 90000, 120000, 120000, 120000];
-      for(let ronda = 0; ronda < RONDAS && !recuperado; ronda++){
-        const espera = ESPERAS[Math.min(ronda, ESPERAS.length - 1)];
-        const aviso = nombre + ': ' + causa + ' · reconectando (ronda ' + (ronda + 1) + ' de ' + RONDAS + ', espera ' + Math.round(espera / 1000) + ' s; puede tardar más)';
+      let ronda = 0;
+      while(!recuperado){
+        const PLANO = [15000, 30000, 45000, 60000, 90000, 120000];
+        const espera = PLANO[ronda % PLANO.length];
+        const aviso = nombre + ': ' + causa + ' · reconectando en automático (intento ' + (ronda + 1) + ', espera ' + Math.round(espera / 1000) + ' s) · seguirá hasta conseguir la voz completa; puedes parar la exportación cuando quieras';
         try{ opciones.onAviso?.(aviso); }catch(_){ }
         try{ toast('🔁 ' + aviso); }catch(_){ }
         try{ await oracleEsperar(mdvSleep(espera), signal); }catch(_){ break; }
         signal?.throwIfAborted();
         try{ recuperado = await oracleVozBloque(bloques[i], voz, rate, nombre, signal, onProg); }catch(re){ if(re && re.name === 'AbortError') throw re; }
+        ronda++;
       }
       if(recuperado){
         try{ opciones.onAviso?.(nombre + ': reconectado, la escena sigue con voz'); }catch(_){ }
