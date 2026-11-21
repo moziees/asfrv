@@ -10420,12 +10420,9 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   const vozYaGuardada = await mdvVozLocal(claveVoz, signal);
   if(vozYaGuardada){ try{ onProg?.((etiqueta || 'Voz') + ' \u00b7 voz guardada en el navegador'); }catch(_){ } return vozYaGuardada; }
   const intentos = [
-    {n:'Edge', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'Stream', f:() => streamTTS(limpio, signal, voz)},
-    {n:'Edge 2', f:() => edgeTTS(limpio, voz, rate, signal)},
-    {n:'Google', f:() => googleTTSBlob(limpio, signal)},
-    {n:'Edge 3', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'OVH', f:() => ovhNarracion(limpio, signal)},
+    {n:'Google', f:() => googleTTSBlob(limpio, signal)},
     {n:'Stream 2', f:() => streamTTS(limpio, signal, voz)},
     {n:'OVH 2', f:() => ovhNarracion(limpio, signal)}
   ];
