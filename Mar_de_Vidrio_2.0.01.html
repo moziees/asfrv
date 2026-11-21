@@ -8161,10 +8161,14 @@ async function diagnostico(){
       ['AI Horde', 'https://aihorde.net/api/v2/status/models?type=text', {method:'GET'}]
     ];
     const pruebas = await Promise.allSettled(pings.map(async ([nombre, url, opts]) => {
-      const r = await fetch(url, Object.assign({}, opts, {signal: AbortSignal.timeout(9000)}));
-      return nombre + ' ' + (r.ok ? 'vivo' : 'HTTP ' + r.status);
+      try{
+        const r = await fetch(url, Object.assign({}, opts, {signal: AbortSignal.timeout(9000)}));
+        if(r.ok) return nombre + ' vivo';
+        if(r.status === 429) return nombre + ' vivo (cuota llena ahora mismo)';
+        return nombre + ' HTTP ' + r.status;
+      }catch(_){ return nombre + ' no alcanzable (red o CORS)'; }
     }));
-    lineas.push('· Sitios vivos: ' + pruebas.map(p => p.status === 'fulfilled' ? p.value : '· fallo de red').join(' · '));
+    lineas.push('· Sitios vivos: ' + pruebas.map(p => p.value).join(' · '));
   }
   if(navigator.storage && navigator.storage.estimate){
     try{
