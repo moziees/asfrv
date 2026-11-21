@@ -10122,9 +10122,26 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
       if(e && e.name === 'AbortError') throw e;
       if(!opciones?.permitirSilencio) throw e;
       const causa = (e && e.message) || 'no respondió';
-      try{ opciones.onAviso?.(nombre + ': ' + causa); }catch(_){}
-      try{ toast('⚠️ Voz fallo en «' + nombre + '»: ' + causa + '. Esa escena irá en silencio.'); }catch(_){}
-      buffers.push(mdvBufferSilencio(bloques[i]));
+      let recuperado = null;
+      const RONDAS = 8, ESPERAS = [15000, 30000, 45000, 60000, 90000, 120000, 120000, 120000];
+      for(let ronda = 0; ronda < RONDAS && !recuperado; ronda++){
+        const espera = ESPERAS[Math.min(ronda, ESPERAS.length - 1)];
+        const aviso = nombre + ': ' + causa + ' · reconectando (ronda ' + (ronda + 1) + ' de ' + RONDAS + ', espera ' + Math.round(espera / 1000) + ' s; puede tardar más)';
+        try{ opciones.onAviso?.(aviso); }catch(_){ }
+        try{ toast('🔁 ' + aviso); }catch(_){ }
+        try{ await oracleEsperar(mdvSleep(espera), signal); }catch(_){ break; }
+        signal?.throwIfAborted();
+        try{ recuperado = await oracleVozBloque(bloques[i], voz, rate, nombre, signal, onProg); }catch(re){ if(re && re.name === 'AbortError') throw re; }
+      }
+      if(recuperado){
+        try{ opciones.onAviso?.(nombre + ': reconectado, la escena sigue con voz'); }catch(_){ }
+        try{ toast('✅ Voz reconectada en «' + nombre + '»'); }catch(_){ }
+        buffers.push(recuperado);
+      }else{
+        try{ opciones.onAviso?.(nombre + ': ' + causa); }catch(_){ }
+        try{ toast('⚠️ Voz fallo en «' + nombre + '»: ' + causa + '. Esa escena irá en silencio.'); }catch(_){ }
+        buffers.push(mdvBufferSilencio(bloques[i]));
+      }
     }
   }
   signal?.throwIfAborted();
