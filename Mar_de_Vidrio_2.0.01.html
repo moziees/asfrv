@@ -8137,6 +8137,14 @@ async function diagnostico(){
     lineas.push('· Memoria del navegador (localStorage): ' + wsSize(bytes) + ' — ~' + pct + '% del techo de 5 MB');
     if(pct >= 80) lineas.push('⚠️ Memoria casi llena (' + pct + '%): archiva o borra chats viejos para que nada se pierda');
   }catch(_){ lineas.push('· Memoria del navegador: no accesible'); }
+  try{
+    const top = Object.keys(localStorage)
+      .map(k => [k, (localStorage.getItem(k) || '').length])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .filter(([, v]) => v > 0);
+    lineas.push('· Lo más pesado guardado: ' + (top.length ? top.map(([k, v]) => k.replace(/^mdv_/, '') + ' ' + wsSize(v)).join(' · ') : 'nada'));
+  }catch(_){ }
   lineas.push('· Chats: ' + loadChats().length + ' · Trabajos: ' + jobs.length + ' · Perfiles: ' + profiles.length + ' · Agentes: ' + agentCards.length);
   lineas.push('· Biblioteca: ' + (biblio.trozos.length ? biblio.trozos.length + ' trozos indexados' : 'sin índice') + (biblio.activa ? ' · activa en el chat y las forjas' : ''));
   lineas.push('· Galería: ' + (galeriaItems.length ? galeriaItems.length + ' pieza(s)' : 'vacía'));
