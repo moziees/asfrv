@@ -979,6 +979,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <button class="panel-btn" onclick="archivarChats()">Archivar todos los chats al PC (mdv_archivo)</button>
         <button class="panel-btn" onclick="archivarGaleriaAlPC()">Archivar TODA la galeria al PC y liberarla</button>
         <button class="panel-btn" onclick="limpiarSnapshotsMax()">Limpiar snapshots antiguas de MAX (conserva la ultima)</button>
+        <button class="panel-btn" onclick="recuperarVocesDelPC()">Recuperar las voces archivadas al PC (mdv_galeria)</button>
         <button class="panel-btn" onclick="restaurarChatsDelArchivo()">Recuperar chats desde el archivo</button>
         <button class="panel-btn" onclick="copiaSeguridad()">Copia de seguridad ahora (sin claves)</button>
         <button class="panel-btn" onclick="restaurarUltimaCopia()">Restaurar la última copia</button>
@@ -7759,6 +7760,38 @@ async function limpiarSnapshotsMax(){
   let n = 0;
   for(const k of viejas){ try{ localStorage.removeItem(k); n++; }catch(_){ } }
   toast('Limpiadas ' + n + ' snapshots (' + wsSize(pesos) + ' liberados)');
+}
+async function recuperarVocesDelPC(){
+  if(!wsHandle){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); return; }
+  let dir = null;
+  try{ dir = await wsHandle.getDirectoryHandle('mdv_galeria'); }catch(_){ }
+  if(!dir){ toast('No hay carpeta mdv_galeria en "' + (wsName || 'la carpeta') + '"'); return; }
+  const voces = [];
+  for await(const h of dir.values()){
+    if(h.kind !== 'file') continue;
+    const m = /^(voz_[a-z0-9]+)/i.exec(h.name);
+    if(!m || !/\.wav$/i.test(h.name)) continue;
+    if(galeriaItems.some(g => g.uid === m[1].toLowerCase())) continue;
+    const f = await h.getFile();
+    if(!f.size) continue;
+    voces.push({clave: m[1].toLowerCase(), nombre: h.name, blob: f});
+  }
+  if(!voces.length){ toast('No hay voces nuevas por recuperar en mdv_galeria/'); return; }
+  const pesos = voces.reduce((a, v) => a + v.blob.size, 0);
+  if(!confirm('Recuperar ' + voces.length + ' voces guardadas (' + wsSize(pesos) + ') de mdv_galeria/ a la galeria del navegador? El Oraculo las usara sin llamar afuera.')) return;
+  let ok = 0;
+  for(const v of voces){
+    try{
+      const buf = await decodificarBlob(v.blob);
+      if(!buf || buf.duration <= 0.4) continue;
+      const nuevo = {uid: v.clave, t: v.blob.lastModified || Date.now(), blob: v.blob, kind: 'audio', nombre: v.nombre, url: URL.createObjectURL(v.blob), temporal: false};
+      await galIdbPut(nuevo);
+      galeriaItems.push(nuevo);
+      ok++;
+    }catch(_){ }
+  }
+  renderEstudio();
+  toast('Voces recuperadas: ' + ok + '/' + voces.length + ' \u00b7 salen del navegador, sin llamar afuera');
 }
 async function copiaSeguridad(silencioso){
   if(!wsHandle){ if(!silencioso){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); } return false; }
