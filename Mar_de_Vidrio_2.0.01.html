@@ -10332,6 +10332,7 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
         try{ recuperado = await oracleVozBloque(bloques[i], voz, rate, nombre, signal, onProg); }catch(re){ if(re && re.name === 'AbortError') throw re; }
         ronda++;
       }
+      signal?.throwIfAborted();
       if(recuperado){
         try{ opciones.onAviso?.(nombre + ': reconectado, la escena sigue con voz'); }catch(_){ }
         try{ toast('✅ Voz reconectada en «' + nombre + '»'); }catch(_){ }
