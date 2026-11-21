@@ -10389,7 +10389,9 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
     {n:'Edge 2', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
     {n:'Edge 3', f:() => edgeTTS(limpio, voz, rate, signal)},
-    {n:'OVH', f:() => ovhNarracion(limpio, signal)}
+    {n:'OVH', f:() => ovhNarracion(limpio, signal)},
+    {n:'Stream 2', f:() => streamTTS(limpio, signal, voz)},
+    {n:'OVH 2', f:() => ovhNarracion(limpio, signal)}
   ];
   const fallos = [];
   const vistos = new Set();
