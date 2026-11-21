@@ -10615,12 +10615,6 @@ async function composeVideoOraculoMP4(cards, globalInterp, deckName, act, signal
     const pc = plan && plan.cards ? plan.cards[i] : null;
     let buf = pc && pc.baseBuf ? pc.baseBuf : null;
     if(!buf){
-      try{
-        const ab = cards[i].audioBlob;
-        if(ab && ab.type === 'audio/wav'){ buf = await decodificarBlob(ab); if(!buf || !(buf.duration > 0.4)) buf = null; }
-      }catch(_){ buf = null; }
-    }
-    if(!buf){
       oracleProg(act, '🔊 Narración ' + (i + 1) + '/' + cards.length + ': ' + cards[i].data[2]);
       buf = await vozBufferFiable(textoParaVoz(cardToText(cards[i])), voz, '+0%', 'Carta ' + (i + 1) + ' · ' + cards[i].data[2], signal, t => oracleProg(act, '🔊 ' + t), vozOpts);
     }
@@ -13663,16 +13657,8 @@ async function mdvPlanAudioOraculo(cards, voz, signal, onProg, vozOpts){
   for(let i = 0; i < cards.length; i++){
     const c = cards[i];
     n++;
-    let baseBuf = null;
-    try{
-      if(c.audioBlob && c.audioBlob.type === 'audio/wav'){ baseBuf = await decodificarBlob(c.audioBlob); if(!baseBuf || !(baseBuf.duration > 0.4)) baseBuf = null; }
-    }catch(_){ baseBuf = null; }
-    if(!baseBuf){
-      baseBuf = await vozBufferFiable(textoParaVoz(cardToText(c)), voz, '+0%', 'Carta ' + (i + 1) + ' · ' + c.data[2], signal,
-        t => onProg && onProg('🔊 ' + t, (n - 1) / Math.max(1, total)), vozOpts);
-    }else{
-      try{ onProg && onProg('🔊 Carta ' + (i + 1) + ' · ' + c.data[2] + ' · voz del navegador', (n - 1) / Math.max(1, total)); }catch(_){ }
-    }
+    const baseBuf = await vozBufferFiable(textoParaVoz(cardToText(c)), voz, '+0%', 'Carta ' + (i + 1) + ' · ' + c.data[2], signal,
+      t => onProg && onProg('🔊 ' + t, (n - 1) / Math.max(1, total)), vozOpts);
     let enhBuf = null;
     if(c.enhancedInterp){
       n++;
