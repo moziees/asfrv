@@ -10404,7 +10404,7 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
     try{
       if(onProg) onProg((etiqueta || 'Voz') + (i ? ' · alternativa ' + intentos[i].n : ''));
       const buf = await decodificarBlob(await intentos[i].f());
-      if(buf && buf.duration > 0.4){ try{ mdvVozGuarda(buf, claveVoz, etiqueta); }catch(_){ } return buf; }
+      if(buf && buf.duration > 0.4){ try{ await mdvVozGuarda(buf, claveVoz, etiqueta); }catch(_){ } return buf; }
       anotar(intentos[i].n, new Error('audio vacío'));
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
