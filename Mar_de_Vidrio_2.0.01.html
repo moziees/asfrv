@@ -2,7 +2,7 @@
 <html lang="es" data-accent=""><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mar de Vidrio · V1.1.94</title>
+<title>Mar de Vidrio · V2.0.02 · PR-1</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -977,6 +977,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <div class="nav-sep" style="width:100%;margin:8px 0"></div>
         <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px">ARCHIVO Y COPIAS (EN TU CARPETA DEL PC)</div>
         <button class="panel-btn" onclick="archivarChats()">Archivar todos los chats al PC (mdv_archivo)</button>
+        <button class="panel-btn" onclick="archivarGaleriaAlPC()">Archivar TODA la galeria al PC y liberarla</button>
+        <button class="panel-btn" onclick="limpiarSnapshotsMax()">Limpiar snapshots antiguas de MAX (conserva la ultima)</button>
+        <button class="panel-btn" onclick="recuperarVocesDelPC()">Recuperar las voces archivadas al PC (mdv_galeria)</button>
         <button class="panel-btn" onclick="restaurarChatsDelArchivo()">Recuperar chats desde el archivo</button>
         <button class="panel-btn" onclick="copiaSeguridad()">Copia de seguridad ahora (sin claves)</button>
         <button class="panel-btn" onclick="restaurarUltimaCopia()">Restaurar la última copia</button>
@@ -2066,7 +2069,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             <select id="chatFondoTipo" aria-label="Tipo de fondo del chat">
               <option value="liso">Color liso</option><option value="degradado">Degradado</option>
               <option value="imagen">Imagen</option><option value="anime">Anime</option>
-              <option value="paisaje">Paisaje</option><option value="patron">Patrón</option>
+              <option value="paisaje">Paisaje</option>
+              <option value="estrellas">Estrellado</option><option value="cristal">Cristal</option>
+              <option value="marmol">Mármol</option><option value="patron">Patrón</option>
             </select>
             <input class="skin-search" type="search" id="chatFondoBuscar" placeholder="Buscar fondo del chat">
             <button type="button" class="mini-btn" id="chatFondoQuitar">Quitar fondo</button>
@@ -2108,7 +2113,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   <main class="main-area">
     <header class="topbar">
       <div class="topbar-left">
-        <span id="chatTitle">Mar de Vidrio · V1.1.94</span>
+        <span id="chatTitle">Mar de Vidrio · V2.0.02 · PR-1</span>
         <button class="prof-chip" id="profChip" onclick="togglePanel('perfiles')" title="Perfil activo · pulsa para cambiar" hidden=""></button>
       </div>
       <div class="topbar-actions" aria-label="Acciones del chat">
@@ -2150,7 +2155,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 <div class="msg-bubble">
                   <b>Tus IA locales se detectan solas.</b><br><br>
                   Pulsa <b>Motores y modelos</b> y verás los motores locales que tengas encendidos, más LM Studio, Jan, llama.cpp, vLLM y KoboldCpp. Elige motor y modelo, y escribe.<br><br>
-                  <b>Gratis sin clave</b>: el motor <b>Automático · gratis</b> prueba Pollinations, LLM7, OVHcloud, Kilo y AI Horde en orden y usa el primero que conteste. Los demás gratuitos (Groq, Gemini, OpenRouter…) solo piden que pegues su clave en el mismo panel.<br><br>
+                  <b>Gratis sin clave</b>: el motor <b>Automático · gratis</b> prueba Pollinations, LLM7, OVHcloud, AI Horde y Kilo en orden y usa el primero que conteste. Los demás gratuitos (Groq, Gemini, OpenRouter…) solo piden que pegues su clave en el mismo panel.<br><br>
                   <b>Mesa Redonda</b>: en el menú lateral, marca dos o más modelos (locales o en la nube), actívala y pregunta. Cada pregunta es una ronda; al final puedes pedir la <b>Síntesis</b>.<br><br>
                   <b>Archivos del PC</b>: elige una carpeta en el menú lateral. El botón del <b>escudo</b> (junto al ＋) manda sobre todo: tiene los 3 modos <b>Solo leer</b>, <b>Bajo confirmación</b> y <b>Control total del PC</b> (escribe, ejecuta, crea entregables y navega sin preguntar), y dentro están también el <b>Modo agente</b> y la carpeta.<br><br>
                   <b>El menú ＋</b>: archivos, carpeta (nivel 1), captura de pantalla, las 3 opciones de internet (y buscar en GitHub o Hugging Face), el motor activo y exportar (conversación o ajustes). Con Control total la IA local puede usar la consola de la app para hacer cálculos o consultas por su cuenta. La lectura web es solo lectura: no entra en webs con contraseña ni paga. Tus conversaciones se guardan solas en <b>Chats</b>, en el menú lateral.
@@ -2894,7 +2899,17 @@ const BACKGROUNDS = [
   ['fiordo', 'Fiordo', {bg:'#162225', side:'#22454e', hover:'#2e4e57', border:'#466972', text:'#eef1f1', muted:'#abbfc4', pattern:'arch'}],
   ['mar_profundo', 'Mar profundo', {bg:'#1c2731', side:'#244059', hover:'#30495f', border:'#445e74', text:'#eef0f1', muted:'#aab9c5', pattern:'grid'}],
   ['acero', 'Acero azul', {bg:'#13161b', side:'#2f3f53', hover:'#3c4a5d', border:'#4c5a6b', text:'#eff0f1', muted:'#afb6c0', pattern:'diagonal'}],
-  ['nube_nocturna', 'Nube nocturna', {bg:'#262936', side:'#141824', hover:'#30354a', border:'#4c536b', text:'#efeff1', muted:'#afb2c0', pattern:'band'}]
+  ['nube_nocturna', 'Nube nocturna', {bg:'#262936', side:'#141824', hover:'#30354a', border:'#4c536b', text:'#efeff1', muted:'#afb2c0', pattern:'band'}],
+  ['vidrio_mar', 'Vidrio de mar', {bg:'#e3f2ee', side:'#bfdfd6', hover:'#d2ebe4', border:'#84bdb0', text:'#1c2825', muted:'#3f6660', pattern:'arch'}],
+  ['cristal_lago', 'Cristal de lago', {bg:'#e6f1f5', side:'#c3dbe8', hover:'#d5e8f1', border:'#79aec6', text:'#1b252b', muted:'#3d5a68', pattern:'band'}],
+  ['nacre', 'Nácar', {bg:'#f4f0f4', side:'#e3d9ec', hover:'#ead9e4', border:'#b7a3c4', text:'#241f28', muted:'#5f5168', pattern:'diagonal'}],
+  ['oraculo', 'Oráculo', {bg:'#171321', side:'#2e2547', hover:'#3a2f57', border:'#8a6d3f', text:'#f1eef6', muted:'#b5abc9', pattern:'arch'}],
+  ['nebulosa', 'Nebulosa', {bg:'#1a1428', side:'#3a2358', hover:'#492f6a', border:'#6b4c96', text:'#f0eef5', muted:'#b3a6c9', pattern:'grid'}],
+  ['fondo_abisal', 'Fondo abisal', {bg:'#0a1418', side:'#16333c', hover:'#20434e', border:'#3a6b78', text:'#edf3f4', muted:'#a4c2c8', pattern:'lines'}],
+  ['atardecer_mar', 'Atardecer en el mar', {bg:'#1d1522', side:'#5e2a35', hover:'#713740', border:'#a05a4a', text:'#f3efee', muted:'#c9a8a2', pattern:'diagonal'}],
+  ['luna_llena', 'Luna llena', {bg:'#141a20', side:'#28394a', hover:'#33455a', border:'#7d93aa', text:'#eef2f6', muted:'#a5b6c6', pattern:'arch'}],
+  ['carta_tarot', 'Carta de tarot', {bg:'#120f0c', side:'#33291c', hover:'#403425', border:'#9c7c40', text:'#f2efe9', muted:'#c0b095', pattern:'grid'}],
+  ['luz_cirio', 'Luz de cirio', {bg:'#1e1712', side:'#4a3726', hover:'#57432e', border:'#8a6f4d', text:'#f2efe9', muted:'#c4b39c', pattern:'band'}]
 ];
 const MDV_PALETAS_CHAT=[
   ['Cobalto',224,66,267],['Menta',153,47,188],['Coral',14,76,331],['Lavanda',272,53,224],
@@ -2907,7 +2922,10 @@ const MDV_TEMAS_CHAT={
   imagen:['Cristal','Tinta en agua','Prisma','Constelación','Papel recortado','Órbitas','Dunas abstractas','Mosaico','Flores','Piedra pulida'],
   anime:['Ciudad nocturna','Calle al atardecer','Estación','Jardín de cerezos','Aula','Festival','Ciudad junto al mar','Templo','Horizonte futurista','Camino de verano'],
   paisaje:['Cordillera','Costa','Dunas','Bosque','Lago','Valle verde','Cañón','Islas','Tundra','Cielo nocturno'],
-  patron:['Puntos','Rayas','Cuadrícula','Rombos','Tablero','Círculos','Líneas verticales','Trama cruzada','Arcos','Baldosas']
+  patron:['Puntos','Rayas','Cuadrícula','Rombos','Tablero','Círculos','Líneas verticales','Trama cruzada','Arcos','Baldosas'],
+  estrellas:['Serenidad','Perseidas','Vía Láctea','Cometa','Luna llena'],
+  cristal:['Vitrina','Pátina','Vidrio soplado','Prisma','Geoda'],
+  marmol:['Carrara','Tinta china','Ónice','Ámbar fluido','Granito']
 };
 let mdvChatFondoPagina=0;
 let mdvChatFondoAplicado='';
@@ -2968,6 +2986,46 @@ function mdvPintarFondoChat(canvas,f){
   const fondo=ctx.createLinearGradient(0,0,0,h);
   fondo.addColorStop(0,color(tono,f.tipo==='anime'?32:22));fondo.addColorStop(1,color(alterno,73));
   ctx.fillStyle=fondo;ctx.fillRect(0,0,w,h);
+  if(f.tipo==='estrellas'){
+    ctx.fillStyle=color(tono,10);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<30+n*55;i++) disco(azar(),azar()*.94,.0008+azar()*.0022,color(alterno,92,.35+azar()*.65));
+    if(n===2){const via=ctx.createLinearGradient(0,0,w,h);via.addColorStop(0,'transparent');via.addColorStop(.5,color(alterno,65,.16));via.addColorStop(1,'transparent');ctx.save();ctx.translate(w/2,h/2);ctx.rotate(-.5);ctx.fillStyle=via;ctx.fillRect(-w,-h/6,2*w,h/3);ctx.restore();}
+    if(n===3){ctx.strokeStyle=color(40,90,.7);ctx.lineWidth=Math.max(1,h/220);ctx.beginPath();ctx.moveTo(.55*w,.3*h);ctx.lineTo(.85*w,.12*h);ctx.stroke();disco(.85,.12,.012,color(45,95,1));}
+    if(n===4) disco(.76,.2,.06,color(48,30,.96));
+    for(let plano=0;plano<3;plano++){
+      const base=.74+plano*.1,puntos=[];
+      for(let i=0;i<=24;i++){const x=i/24,relieve=(Math.sin(x*(5+n)*Math.PI+plano*2)+1)*.03+azar()*.04;puntos.push([x,base-relieve]);}
+      silueta([...puntos,[1,1],[0,1]],color(plano%2?tono:alterno,10+plano*8));
+    }
+    return;
+  }
+  if(f.tipo==='cristal'){
+    ctx.fillStyle=color(tono,84);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<7+n*3;i++){
+      const cx=azar(),cy=azar(),lado=.12+azar()*.3,lados=5+Math.floor(azar()*3),rot=azar()*Math.PI;
+      ctx.save();ctx.translate(cx*w,cy*h);ctx.rotate(rot);ctx.beginPath();
+      for(let k=0;k<lados;k++){const an=Math.PI*2*k/lados,r=lado*(.6+azar()*.5);const px=Math.cos(an)*r*w,py=Math.sin(an)*r*h;k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+      ctx.closePath();
+      ctx.fillStyle=color(alterno,55,.09+azar()*.13);ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,'+(.18+azar()*.2)+')';ctx.lineWidth=Math.max(1,h/240);ctx.stroke();
+      ctx.restore();
+    }
+    for(let i=0;i<9;i++) disco(azar(),azar(),.004+azar()*.01,'rgba(255,255,255,'+(.35+azar()*.5)+')');
+    return;
+  }
+  if(f.tipo==='marmol'){
+    ctx.fillStyle=color(alterno,90);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<6;i++) disco(azar(),azar(),.2+azar()*.3,color(i%2?tono:alterno,46,.07+azar()*.06));
+    for(let i=0;i<7+n*5;i++){
+      const x0=azar();
+      ctx.strokeStyle=color(tono,18,.16+azar()*.3);
+      ctx.lineWidth=(.4+azar()*2.6)*h/150;
+      ctx.beginPath();ctx.moveTo(x0*w,0);
+      ctx.bezierCurveTo((x0-.16+azar()*.32)*w,h*.35,(x0-.12+azar()*.24)*w,h*.7,(x0-.08+azar()*.16)*w,h);
+      ctx.stroke();
+    }
+    return;
+  }
   if(f.tipo==='imagen'){
     for(let i=0;i<62;i++){
       const x=azar(),y=azar(),r=.024+azar()*.22,t=color(i%2?tono:alterno,38+azar()*52,.17+azar()*.46);
@@ -3069,7 +3127,7 @@ function mdvMostrarFondosChat(){
     });
     return boton;
   }));
-  $('#chatFondoTotal').textContent=coincide.length+' de 100 · página '+(mdvChatFondoPagina+1)+' de '+paginas;
+  $('#chatFondoTotal').textContent=coincide.length+' de '+opciones.length+' · página '+(mdvChatFondoPagina+1)+' de '+paginas;
   $('#chatFondoAnterior').disabled=mdvChatFondoPagina===0;
   $('#chatFondoSiguiente').disabled=mdvChatFondoPagina+1>=paginas;
 }
@@ -3453,13 +3511,17 @@ async function mesaSintesis(candidatos,prompt,signal){
  throw Error(errores.join(' / '));
 }
 async function withLocalRetry(m, fn, signal){
-  const R = isLocalModel(m) ? localNet.retries : 1;
-  let last = null;
-  for(let i = 0; i <= R; i++){
+  const local = isLocalModel(m);
+  let last = null, i = 0;
+  while(true){
     if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
     if(i > 0){
-      toast('⏳ Reconexión: pausa de ' + Math.round(localNet.pauseMs/1000) + ' s antes de reintentar «' + m.name + '» (' + (i+1) + '/' + (R+1) + ')');
-      await new Promise(r => setTimeout(r, localNet.pauseMs));
+      const e = last;
+      const espera = (e && e.retrySeconds) ? Math.min(120, Math.max(3, e.retrySeconds))
+        : local ? localNet.pauseMs
+        : [15000, 30000, 45000, 60000, 90000, 120000][Math.min(i - 1, 5)];
+      toast('⏳ Reconexión automática de «' + m.name + '»: intento ' + (i + 1) + ' en ' + Math.round(espera / 1000) + ' s · seguirá hasta completar la respuesta (puedes detenerla)');
+      await new Promise(r => setTimeout(r, espera));
       if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
     }
     try{
@@ -3469,10 +3531,16 @@ async function withLocalRetry(m, fn, signal){
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
       last = e;
-      if(i >= R || !localNetRetryable(m, e)) throw e;
+      if(!reconexionTotal(e) || i >= 200) throw e;
+      i++;
     }
   }
-  throw last;
+}
+function reconexionTotal(e){
+  if(!e) return false;
+  if(e.status) return e.status === 429 || e.status >= 500;
+  if(e.idle || e.retrySeconds) return true;
+  return /Failed to fetch|NetworkError|Load failed|tardó más|no respondió|dejó de responder|Respuesta vacía|Sin respuesta/i.test(e.message || '');
 }
 function renderLocalNetInputs(){
   const f = document.getElementById('lnFirst'); if(!f) return;
@@ -5449,6 +5517,8 @@ const CLOUD_DEFAULTS = [
    hint:'Clave gratis en aistudio.google.com/apikey'},
   {id:'mistral', group:'online', engine:'mistral', name:'Mistral', url:'https://api.mistral.ai/v1/chat/completions', model:'mistral-small-latest', key:'', type:'openai', keyUrl:'https://console.mistral.ai',
    hint:'Capa free disponible. console.mistral.ai'},
+  {id:'mistral-code', group:'online', engine:'mistral-code', name:'Codestral (Mistral · código)', url:'https://api.mistral.ai/v1/chat/completions', model:'codestral-latest', key:'', type:'openai', keyUrl:'https://console.mistral.ai',
+   hint:'Especialista en programación de Mistral. Misma clave y capa free que Mistral.'},
   {id:'deepseek', group:'online', engine:'deepseek', name:'DeepSeek', url:'https://api.deepseek.com/v1/chat/completions', model:'deepseek-chat', key:'', type:'openai', keyUrl:'https://platform.deepseek.com/api_keys',
    hint:'Clave en platform.deepseek.com. Modelos deepseek-chat y deepseek-reasoner.'},
   {id:'cerebras', group:'online', engine:'cerebras', name:'Cerebras', url:'https://api.cerebras.ai/v1/chat/completions', model:'gpt-oss-120b', key:'', type:'openai', keyUrl:'https://cloud.cerebras.ai',
@@ -5491,6 +5561,7 @@ const catalogosRemotos={
   openrouter:['https://openrouter.ai/api/v1/models','Variantes gratuitas con clave · sujetas a cuota'],
   groq:['https://api.groq.com/openai/v1/models','Acceso y cuota según cuenta',true],
   mistral:['https://api.mistral.ai/v1/models','Acceso y cuota según cuenta',true],
+  'mistral-code':['https://api.mistral.ai/v1/models','Catálogo de Mistral · misma clave',true],
   kilo:['https://ai-gateway.kilo.ai/api/v1/models','Variantes gratuitas publicadas por Kilo'],
   aihorde:['https://aihorde.net/api/v2/status/models?type=text','Trabajadores disponibles · cola comunitaria']
 };
@@ -5617,9 +5688,9 @@ let scanPromise = null;
 const AUTO_ENTRY = {
   id:'autofree', group:'free', engine:'autofree', name:'Automático · gratis',
   url:'', model:'', key:'', type:'cascade',
-  hint:'Prueba Pollinations, LLM7, OVHcloud, Kilo y AI Horde en orden y usa el primero que responda. Sin clave.'
+  hint:'Prueba Pollinations, LLM7, OVHcloud, AI Horde y Kilo en orden y usa el primero que responda. Sin clave.'
 };
-const FREE_ORDER = ['pollinationsfree','llm7','ovh','kilo','aihorde'];
+const FREE_ORDER = ['pollinationsfree','llm7','ovh','aihorde','kilo'];
 
 function seedModels(){
   models = [];
@@ -7654,6 +7725,74 @@ async function restaurarChatsDelArchivo(){
     toast('Recuperados ' + n + ' chats (el resto sigue en mdv_archivo)');
   }catch(e){ toast('No se pudo leer mdv_archivo: ' + e.message); }
 }
+async function archivarGaleriaAlPC(){
+  if(!wsHandle){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); return; }
+  if(wsMode === 'read'){ toast('La carpeta esta en Solo leer'); return; }
+  const piezas = galeriaItems.filter(it => it.blob instanceof Blob && it.blob.size && !it.temporal);
+  if(!piezas.length){ toast('La galeria ya esta vacia'); return; }
+  if(!confirm('Copiar ' + piezas.length + ' piezas a mdv_galeria/ en "' + (wsName || 'la carpeta') + '" y liberarlas del navegador? Quedan como archivos en tu disco. No se puede deshacer.')) return;
+  let okc = 0, pesos = 0;
+  const usados = new Set();
+  for(const it of piezas){
+    try{
+      let base = (it.nombre || ('pieza_' + it.uid)).replace(/[^\w.\-]+/g, '_').slice(-60);
+      if(usados.has(base)) base = it.uid.slice(0, 8) + '_' + base;
+      usados.add(base);
+      await wsRawWrite('mdv_galeria/' + base, it.blob);
+      await galIdbDel(it.uid);
+      if(it.url) URL.revokeObjectURL(it.url);
+      pesos += it.blob.size;
+      galeriaItems = galeriaItems.filter(g => g.uid !== it.uid);
+      okc++;
+    }catch(_){ }
+  }
+  renderEstudio();
+  toast('Galeria archivada: ' + okc + '/' + piezas.length + ' piezas (' + wsSize(pesos) + ') en mdv_galeria/');
+}
+async function limpiarSnapshotsMax(){
+  const snaps = Object.keys(localStorage).filter(k => /^moises_max_snap_/.test(k)).sort();
+  if(snaps.length <= 1){ toast('No hay snapshots antiguas de MAX que limpiar'); return; }
+  const viejas = snaps.slice(0, -1);
+  const pesos = viejas.reduce((a, k) => a + (localStorage.getItem(k) || '').length, 0);
+  const fecha = k => { const t = Number(String(k).split('_').pop()); return t ? new Date(t).toLocaleDateString('es-ES') : String(k); };
+  const ultima = fecha(snaps[snaps.length - 1]);
+  if(!confirm('Hay ' + snaps.length + ' snapshots del modulo MAX (datos de otra app en este mismo servidor).\nBorrar las ' + viejas.length + ' mas viejas (' + wsSize(pesos) + '): ' + viejas.map(fecha).join(', ') + '.\nSe conserva la ultima (' + ultima + '). No se puede deshacer.')) return;
+  let n = 0;
+  for(const k of viejas){ try{ localStorage.removeItem(k); n++; }catch(_){ } }
+  toast('Limpiadas ' + n + ' snapshots (' + wsSize(pesos) + ' liberados)');
+}
+async function recuperarVocesDelPC(){
+  if(!wsHandle){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); return; }
+  let dir = null;
+  try{ dir = await wsHandle.getDirectoryHandle('mdv_galeria'); }catch(_){ }
+  if(!dir){ toast('No hay carpeta mdv_galeria en "' + (wsName || 'la carpeta') + '"'); return; }
+  const voces = [];
+  for await(const h of dir.values()){
+    if(h.kind !== 'file') continue;
+    const m = /^(voz_[a-z0-9]+)/i.exec(h.name);
+    if(!m || !/\.wav$/i.test(h.name)) continue;
+    if(galeriaItems.some(g => g.uid === m[1].toLowerCase())) continue;
+    const f = await h.getFile();
+    if(!f.size) continue;
+    voces.push({clave: m[1].toLowerCase(), nombre: h.name, blob: f});
+  }
+  if(!voces.length){ toast('No hay voces nuevas por recuperar en mdv_galeria/'); return; }
+  const pesos = voces.reduce((a, v) => a + v.blob.size, 0);
+  if(!confirm('Recuperar ' + voces.length + ' voces guardadas (' + wsSize(pesos) + ') de mdv_galeria/ a la galeria del navegador? El Oraculo las usara sin llamar afuera.')) return;
+  let ok = 0;
+  for(const v of voces){
+    try{
+      const buf = await decodificarBlob(v.blob);
+      if(!buf || buf.duration <= 0.4) continue;
+      const nuevo = {uid: v.clave, t: v.blob.lastModified || Date.now(), blob: v.blob, kind: 'audio', nombre: v.nombre, url: URL.createObjectURL(v.blob), temporal: false};
+      await galIdbPut(nuevo);
+      galeriaItems.push(nuevo);
+      ok++;
+    }catch(_){ }
+  }
+  renderEstudio();
+  toast('Voces recuperadas: ' + ok + '/' + voces.length + ' \u00b7 salen del navegador, sin llamar afuera');
+}
 async function copiaSeguridad(silencioso){
   if(!wsHandle){ if(!silencioso){ toast('Elige la carpeta del PC primero'); openPanel('workspace'); } return false; }
   try{
@@ -8073,7 +8212,20 @@ async function diagnostico(){
   lineas.push('· WebGPU (motor del navegador): ' + (navigator.gpu ? 'disponible' : 'no disponible'));
   lineas.push('· Voz (TTS): ' + (('speechSynthesis' in window) ? 'disponible' : 'no disponible'));
   lineas.push('· Compositor de vídeo (WebCodecs): ' + (typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' ? 'disponible' : 'no disponible en este navegador'));
-  try{ lineas.push('· Memoria del navegador: ' + wsSize(JSON.stringify(localStorage).length) + ' usados'); }catch(_){ lineas.push('· Memoria del navegador: no accesible'); }
+  try{
+    const bytes = JSON.stringify(localStorage).length;
+    const pct = Math.round(bytes / (5*1024*1024) * 100);
+    lineas.push('· Memoria del navegador (localStorage): ' + wsSize(bytes) + ' — ~' + pct + '% del techo de 5 MB');
+    if(pct >= 80) lineas.push('⚠️ Memoria casi llena (' + pct + '%): archiva o borra chats viejos para que nada se pierda');
+  }catch(_){ lineas.push('· Memoria del navegador: no accesible'); }
+  try{
+    const top = Object.keys(localStorage)
+      .map(k => [k, (localStorage.getItem(k) || '').length])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .filter(([, v]) => v > 0);
+    lineas.push('· Lo más pesado guardado: ' + (top.length ? top.map(([k, v]) => k.replace(/^mdv_/, '') + ' ' + wsSize(v)).join(' · ') : 'nada'));
+  }catch(_){ }
   lineas.push('· Chats: ' + loadChats().length + ' · Trabajos: ' + jobs.length + ' · Perfiles: ' + profiles.length + ' · Agentes: ' + agentCards.length);
   lineas.push('· Biblioteca: ' + (biblio.trozos.length ? biblio.trozos.length + ' trozos indexados' : 'sin índice') + (biblio.activa ? ' · activa en el chat y las forjas' : ''));
   lineas.push('· Galería: ' + (galeriaItems.length ? galeriaItems.length + ' pieza(s)' : 'vacía'));
@@ -8086,6 +8238,33 @@ async function diagnostico(){
     lineas.push('· Copias de seguridad: ' + (copias ? copias + ' copia(s) en mdv_copias/' : 'aún ninguna (se hace sola a diario)'));
   }else{
     lineas.push('· Copias de seguridad: requieren la carpeta del PC');
+  }
+  if(typeof webMode !== 'undefined' && webMode !== 'off'){
+    const pings = [
+      ['Google TTS', 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=es&q=hola', {method:'GET'}],
+      ['OVH voz', 'https://nvr-tts-es-es.endpoints.kepler.ai.cloud.ovh.net/api/v1/tts/text_to_audio', {method:'POST', headers:{'Content-Type':'application/json', Accept:'application/octet-stream'}, body:JSON.stringify({encoding:1, language_code:'es-ES', sample_rate_hz:16000, text:'ok', voice_name:'Spanish-ES-Female-1'})}],
+      ['Kilo', 'https://ai-gateway.kilo.ai/api/v1/models', {method:'GET'}],
+      ['Stream voz', 'https://api.streamelements.com/kappa/v2/speech?voice=Conchita&text=hola', {method:'GET'}],
+      ['OVH chat', 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/models', {method:'GET'}],
+      ['Pollinations', 'https://gen.pollinations.ai/text/models', {method:'GET'}],
+      ['LLM7', 'https://api.llm7.io/v1/models', {method:'GET'}],
+      ['AI Horde', 'https://aihorde.net/api/v2/status/models?type=text', {method:'GET'}]
+    ];
+    const pruebas = await Promise.allSettled(pings.map(async ([nombre, url, opts]) => {
+      try{
+        const r = await fetch(url, Object.assign({}, opts, {signal: AbortSignal.timeout(9000)}));
+        if(r.ok) return nombre + ' vivo';
+        if(r.status === 429) return nombre + ' vivo (cuota llena ahora mismo)';
+        return nombre + ' HTTP ' + r.status;
+      }catch(_){ return nombre + ' no alcanzable (red o CORS)'; }
+    }));
+    lineas.push('· Sitios vivos: ' + pruebas.map(p => p.value).join(' · '));
+  }
+  if(navigator.storage && navigator.storage.estimate){
+    try{
+      const {usage, quota} = await navigator.storage.estimate();
+      lineas.push('· Cuota total del origen: ' + wsSize(usage || 0) + ' usados de ' + wsSize(quota || 0) + ' (incluye galeria)');
+    }catch(_){}
   }
   appendMsg('assistant', '**Diagnóstico del sistema** · ' + new Date().toLocaleString('es-ES') + '\n' + lineas.join('\n'), {modelName: 'Diagnóstico'});
   toast('Diagnóstico generado');
@@ -8347,9 +8526,9 @@ async function edgeTTS(text, voice = 'es-ES-ElviraNeural', rate = '+0%', signal)
     if(!chunks[i]) continue;
     signal?.throwIfAborted();
     let part = null, ultimo = null;
-    for(let n = 0; n < 2 && !part; n++){
+    for(let n = 0; n < 3 && !part; n++){
       try{ part = await edgeTTSws(chunks[i], voice, rate, signal); }
-      catch(e){ if(e && e.name === 'AbortError') throw e; ultimo = e; if(n < 1) await mdvSleep(700); }
+      catch(e){ if(e && e.name === 'AbortError') throw e; ultimo = e; if(n < 2) await mdvSleep(700 + n * 1100); }
     }
     if(!part) throw ultimo || new Error('Edge no respondió');
     parts.push(part);
@@ -8492,6 +8671,27 @@ async function audioBufferAMp3(buf){
   if(fin.length) bloques.push(new Int8Array(fin));
   return new Blob(bloques, {type:'audio/mpeg'});
 }
+async function streamTTS(text, signal, voz){
+  if(webMode === 'off') throw new Error('Internet apagado');
+  const limpio = String(text || '').trim();
+  if(!limpio) throw new Error('Sin texto');
+  const vozSE = /Alvaro|Tomas|Pablo|Enrique|Jorge/i.test(String(voz || '')) ? 'Enrique' : 'Conchita';
+  const chunks = ttsChunks(limpio, 400);
+  const parts = [];
+  for(let i = 0; i < chunks.length; i++){
+    if(!chunks[i]) continue;
+    signal?.throwIfAborted();
+    const url = 'https://api.streamelements.com/kappa/v2/speech?voice=' + vozSE + '&text=' + encodeURIComponent(chunks[i]);
+    const plazo = AbortSignal.timeout(20000);
+    const r = await fetch(url, {cache:'no-store', signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+    if(!r.ok) throw new Error('TTS de Stream: HTTP ' + r.status);
+    const b = await r.blob();
+    if(!b.type.startsWith('audio')) throw new Error('TTS de Stream no devolvi\u00f3 audio');
+    parts.push(b);
+    if(i < chunks.length - 1) await mdvSleep(200);
+  }
+  return new Blob(parts, {type:'audio/mpeg'});
+}
 async function googleTTSBlob(text, signal){
   if(webMode === 'off') throw new Error('Internet apagado');
   const chunks = ttsChunks(String(text || ''), 180);
@@ -8509,6 +8709,75 @@ async function googleTTSBlob(text, signal){
     if(i < chunks.length - 1) await mdvSleep(150);
   }
   return new Blob(parts, {type:'audio/mpeg'});
+}
+async function googleTTSBlobProxy(text, signal){
+  if(webMode === 'off') throw new Error('Internet apagado');
+  const chunks = ttsChunks(String(text || ''), 180);
+  const parts = [];
+  for(let i = 0; i < chunks.length; i++){
+    if(!chunks[i]) continue;
+    signal?.throwIfAborted();
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=es&q=' + encodeURIComponent(chunks[i]);
+    const plazo = AbortSignal.timeout(20000);
+    let r = null;
+    for(let e = 0; e < 2 && !(r && r.ok); e++){
+      if(e){ await mdvSleep(2000); signal?.throwIfAborted(); }
+      r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), {cache:'no-store', signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+    }
+    if(!r || !r.ok) throw new Error('TTS de Google (proxy): HTTP ' + (r ? r.status : 'sin respuesta'));
+    const b = await r.blob();
+    if(!b.type.startsWith('audio')) throw new Error('TTS de Google (proxy) no devolvió audio');
+    parts.push(b);
+    if(i < chunks.length - 1) await mdvSleep(150);
+  }
+  return new Blob(parts, {type:'audio/mpeg'});
+}
+const geminiTTSCache = {models: []};
+async function geminiTTSWav(texto, signal){
+  if(webMode === 'off') throw new Error('Internet apagado');
+  const g = models.find(m => m.id === 'gemini');
+  if(!g || !g.key) throw new Error('Sin clave de Gemini (ponla en Motores y modelos)');
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/';
+  const plazo = AbortSignal.timeout(90000);
+  const cuerpo = JSON.stringify({contents:[{parts:[{text: String(texto || '')}]}], generationConfig:{responseModalities:['AUDIO'], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Kore'}}}}});
+  const cabeceras = {'Content-Type':'application/json', 'x-goog-api-key': g.key};
+  let r = null;
+  let lista = (geminiTTSCache.models || []).slice();
+  if(!lista.length){
+    try{
+      const lr = await fetch(url.replace(/\/+$/, '') + '?pageSize=1000', {headers:cabeceras, signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+      if(lr.ok){
+        const lj = await lr.json();
+        const nombres = ((lj.models || []) || []).map(x => String(x.name || '').replace(/^models\//, ''))
+          .filter(n => /tts/i.test(n) && !/dialog|native.?dialog/i.test(n));
+        geminiTTSCache.models = nombres;
+        lista = nombres.sort((a, b) => b.localeCompare(a, undefined, {numeric:true}));
+      }
+    }catch(_){ }
+  }
+  const candidatos = lista.length ? lista : ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
+  for(const modelo of candidatos){
+    r = await fetch(url + modelo + ':generateContent', {method:'POST', headers:cabeceras, body:cuerpo, signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+    if(r.ok) break;
+    if(r.status !== 404 && r.status !== 400) throw new Error('Gemini TTS: HTTP ' + r.status);
+  }
+  if(!r || !r.ok) throw new Error('Gemini TTS: HTTP ' + (r ? r.status : 'sin respuesta'));
+  const j = await r.json();
+  const parte = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+  const audio = parte.find(x => x.inlineData && x.inlineData.data);
+  if(!audio) throw new Error('Gemini TTS sin audio');
+  const mime = String(audio.inlineData.mimeType || '');
+  const hz = Number((mime.match(/rate=(\d+)/) || [])[1] || 24000);
+  const pcm = Uint8Array.from(atob(audio.inlineData.data), c => c.charCodeAt(0));
+  const wav = new ArrayBuffer(44 + pcm.length);
+  const v = new DataView(wav);
+  const cad = (o, t) => { for(let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  cad(0, 'RIFF'); v.setUint32(4, 36 + pcm.length, true); cad(8, 'WAVE');
+  cad(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, hz, true); v.setUint32(28, hz * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  cad(36, 'data'); v.setUint32(40, pcm.length, true);
+  new Uint8Array(wav, 44).set(pcm);
+  return new Blob([wav], {type:'audio/wav'});
 }
 const OVH_TTS_URL = 'https://nvr-tts-es-es.endpoints.kepler.ai.cloud.ovh.net/api/v1/tts/text_to_audio';
 function ovhTtsBody(text){
@@ -9600,7 +9869,7 @@ async function oracleIA(mensajes, signal, opciones = {}){
     const base = local
       ? (m.type === 'chrome' ? 60000 : m.type === 'webllm' ? 120000 : Math.max(60000, Math.min(localNet.firstMs, 300000)))
       : 30000;
-    const plazoMs = Math.max(10000, Math.min(base, Number(opciones.plazoMs) || base));
+    const plazoMs = Math.max(10000, Number(opciones.plazoMs) || base);
     const plazo = AbortSignal.timeout(plazoMs);
     const intento = signal ? AbortSignal.any([signal, plazo]) : plazo;
     try{
@@ -10101,6 +10370,36 @@ async function decodificarBlob(blob){
   finally{ try{ ac.close(); }catch(_){}}
 }
 const oracleBloquesNarracion = new WeakMap();
+const vozPendientes = [];
+async function vozRecuperarPendientes(signal, onProg){
+  while(vozPendientes.length){
+    signal?.throwIfAborted();
+    const quedan = vozPendientes.length;
+    try{ onProg && onProg('Reconectando ' + quedan + ' voz(es) hasta terminar la exportación: ' + vozPendientes.map(p => p.nombre).slice(0, 3).join(' · ')); }catch(_){ }
+    try{ toast('🔁 Reconectando ' + quedan + ' voz(es) hasta terminar la exportación'); }catch(_){ }
+    let logradas = 0;
+    for(let k = vozPendientes.length - 1; k >= 0; k--){
+      signal?.throwIfAborted();
+      const p = vozPendientes[k];
+      try{
+        await p.run(signal || p.signal);
+        vozPendientes.splice(k, 1);
+        logradas++;
+        try{ toast('✅ Voz recuperada («' + p.nombre + '»); quedan ' + vozPendientes.length); }catch(_){ }
+      }catch(e){
+        if(e && e.name === 'AbortError') throw e;
+      }
+    }
+    if(vozPendientes.length && !logradas){
+      try{ onProg && onProg('Aún sin voz (' + vozPendientes.length + ' pendientes) · nueva ronda en 60 s; no se da por terminada sin ellas'); }catch(_){ }
+      try{ toast('🔁 ' + vozPendientes.length + ' voz(es) sin conseguir · nueva ronda en 60 s'); }catch(_){ }
+      try{ await oracleEsperar(mdvSleep(60000), signal); }catch(_){ break; }
+    }
+  }
+  if(vozPendientes.length){
+    try{ toast('⚠️ ' + vozPendientes.length + ' voz(es) quedaron en silencio'); }catch(_){ }
+  }
+}
 function mdvBufferSilencio(texto){
   const SR = 24000;
   const dur = Math.max(1.5, Math.min(120, String(texto || '').length / 14));
@@ -10118,10 +10417,37 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
       if(!opciones?.permitirSilencio) throw e;
-      try{ opciones.onAviso?.(nombre); }catch(_){}
+      const causa = (e && e.message) || 'no respondió';
+      const slot = buffers.length;
       buffers.push(mdvBufferSilencio(bloques[i]));
+      let recuperado = null;
+      let ronda = 0;
+      while(ronda < 3 && !recuperado){
+        const espera = [15000, 30000, 45000][ronda];
+        const aviso = nombre + ': ' + causa + ' · reconectando en automático (intento ' + (ronda + 1) + ', espera ' + Math.round(espera / 1000) + ' s)';
+        try{ opciones.onAviso?.(aviso); }catch(_){ }
+        try{ toast('🔁 ' + aviso); }catch(_){ }
+        try{ await oracleEsperar(mdvSleep(espera), signal); }catch(_){ break; }
+        signal?.throwIfAborted();
+        try{ recuperado = await oracleVozBloque(bloques[i], voz, rate, nombre, signal, onProg); }catch(re){ if(re && re.name === 'AbortError') throw re; }
+        ronda++;
+      }
+      if(recuperado){
+        buffers[slot] = recuperado;
+        try{ opciones.onAviso?.(nombre + ': reconectado, la escena sigue con voz'); }catch(_){ }
+        try{ toast('✅ Voz reconectada en «' + nombre + '»'); }catch(_){ }
+      }else{
+        try{ opciones.onAviso?.(nombre + ': ' + causa); }catch(_){ }
+        try{ toast('⏭ ' + nombre + ' avanza en silencio; la voz se reclama al final hasta conseguirla'); }catch(_){ }
+        vozPendientes.push({nombre: nombre, signal: signal, run: async (senyal) => {
+          const b = await oracleVozBloque(bloques[i], voz, rate, nombre, senyal || signal, onProg);
+          buffers[slot] = b;
+          try{ opciones.onRecuperado?.(nombre); }catch(_){ }
+        }});
+      }
     }
   }
+  if(vozPendientes.length) await vozRecuperarPendientes(signal, onProg);
   signal?.throwIfAborted();
   const unido = buffers.length === 1 ? buffers[0] : await unirAudioBuffers(buffers, 0);
   let inicio = 0;
@@ -10132,13 +10458,44 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
   }));
   return unido;
 }
+function mdvVozClave(texto, voz, rate){
+  const s = (voz || '') + '|' + (rate || '') + '|' + texto;
+  let h = 5381;
+  for(let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return 'voz_' + h.toString(36);
+}
+async function mdvVozGuarda(buf, clave, etiqueta){
+  try{
+    const wav = audioBufferToWavBlob(buf);
+    const it = {uid: clave, t: Date.now(), blob: wav, kind: 'audio', nombre: clave + '_' + String(etiqueta || 'voz').replace(/[^\w.\-]+/g, '_').slice(-40) + '.wav', url: URL.createObjectURL(wav), temporal: false};
+    await galIdbPut(it);
+    if(!galeriaItems.some(g => g.uid === clave)){ galeriaItems.push(it); try{ renderEstudio(); }catch(_){ } }
+  }catch(_){ }
+}
+async function mdvVozLocal(clave, signal){
+  try{
+    let it = galeriaItems.find(g => g.uid === clave) || null;
+    if(!it){ const todos = await galIdbAll(); it = (todos || []).find(g => g.uid === clave) || null; }
+    if(!it || !(it.blob instanceof Blob) || !it.blob.size) return null;
+    signal?.throwIfAborted();
+    const buf = await decodificarBlob(it.blob);
+    return (buf && buf.duration > 0.4) ? buf : null;
+  }catch(_){ return null; }
+}
 async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   const limpio = String(texto || '').trim();
   if(!limpio) throw new Error((etiqueta || 'Voz') + ': sin texto');
+  const claveVoz = mdvVozClave(limpio, voz, rate);
+  const vozYaGuardada = await mdvVozLocal(claveVoz, signal);
+  if(vozYaGuardada){ try{ onProg?.((etiqueta || 'Voz') + ' \u00b7 voz guardada en el navegador'); }catch(_){ } return vozYaGuardada; }
   const intentos = [
-    {n:'Edge', f:() => edgeTTS(limpio, voz, rate, signal)},
+    {n:'Google Proxy', f:() => googleTTSBlobProxy(limpio, signal)},
+    {n:'Stream', f:() => streamTTS(limpio, signal, voz)},
+    {n:'OVH', f:() => ovhNarracion(limpio, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
-    {n:'OVH', f:() => ovhNarracion(limpio, signal)}
+    {n:'Stream 2', f:() => streamTTS(limpio, signal, voz)},
+    {n:'OVH 2', f:() => ovhNarracion(limpio, signal)},
+    {n:'Gemini', f:() => geminiTTSWav(limpio, signal)}
   ];
   const fallos = [];
   const vistos = new Set();
@@ -10153,7 +10510,7 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
     try{
       if(onProg) onProg((etiqueta || 'Voz') + (i ? ' · alternativa ' + intentos[i].n : ''));
       const buf = await decodificarBlob(await intentos[i].f());
-      if(buf && buf.duration > 0.4) return buf;
+      if(buf && buf.duration > 0.4){ try{ await mdvVozGuarda(buf, claveVoz, etiqueta); }catch(_){ } return buf; }
       anotar(intentos[i].n, new Error('audio vacío'));
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
@@ -11053,7 +11410,7 @@ function updateChatTitle(){
   const el = document.getElementById('chatTitle');
   if(!el) return;
   const c = currentChatId ? loadChats().find(x => x.id === currentChatId) : null;
-  el.textContent = c ? (c.title || 'Chat') : 'Mar de Vidrio · V1.1.94';
+  el.textContent = c ? (c.title || 'Chat') : 'Mar de Vidrio · V2.0.02 · PR-1';
 }
 function renderChatList(){
   const box = document.getElementById('chatList'); if(!box) return;
@@ -12951,12 +13308,23 @@ async function generateDeckSummaries(signal,opciones={}){
     signal?.throwIfAborted();
     opciones.progreso?.(deckName,indice,uniqueDecks.length);
     const deckCards=oracle.cards.filter(c=>c.deckName===deckName);
-    try{
-      const lectura=await oracleIA(oracleMensajeConjunto(deckCards,deckName),signal,opciones);
-      signal?.throwIfAborted();
-      if(!lectura?.trim() || oracleTextoError(lectura)) throw new Error('No se obtuvo una lectura válida');
-      oracle.deckSummaries[deckName]=lectura.trim();
-    }catch(e){if(signal?.aborted || e.name==='AbortError'){renderDeckSummaries();throw e;}fallos++}
+    let rondas = 0;
+    for(;;){
+      try{
+        const lectura=await oracleIA(oracleMensajeConjunto(deckCards,deckName),signal,opciones);
+        signal?.throwIfAborted();
+        if(!lectura?.trim() || oracleTextoError(lectura)) throw new Error('No se obtuvo una lectura válida');
+        oracle.deckSummaries[deckName]=lectura.trim();
+        break;
+      }catch(e){
+        if(signal?.aborted || e.name==='AbortError'){renderDeckSummaries();throw e;}
+        rondas++;
+        const espera=[15000,30000,45000,60000,90000,120000][Math.min(rondas-1,5)];
+        try{toast('\ud83d\udd01 Lectura de \u00ab'+deckName+'\u00bb: reintentando (intentos: '+rondas+') en '+Math.round(espera/1000)+' s \u00b7 seguira hasta conseguirla')}catch(_){ }
+        await new Promise(r=>setTimeout(r,espera));
+        if(signal?.aborted) throw new DOMException('Detenido','AbortError');
+      }
+    }
     persistOracle();renderDeckSummaries()
   }
   if(fallos)toast('No se pudo generar alguna lectura de mazo. Inténtalo otra vez.');
@@ -13039,7 +13407,7 @@ async function oraclePrepararVideo(cards, controller, imageBatch){
   const readingJob=(async()=>{
     try{
       if(getActive()){
-        const lecturaOpts={sinCascada:true,plazoMs:180000};
+        const lecturaOpts={sinCascada:true,plazoMs:86400000};
         await mdvEnriquecerTodas(cards, lecturaSignal, texto=>{readings=texto;progress();}, lecturaOpts);
         lecturaSignal.throwIfAborted();
         readingProgress=.5;
@@ -13094,7 +13462,7 @@ async function oracleExportVideo(){
     await oraclePrepararVideo(oracle.cards,controller,imageBatch);
     updateProg('🎬 Componiendo video…',26,window.VideoEncoder?'WebCodecs · MP4':'no disponible');
     const sinVoz = new Set();
-    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et)};
+    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et), onRecuperado:n => { for(const s of [...sinVoz]){ if(s.indexOf(n + ':') === 0) sinVoz.delete(s); } }};
     const blob=await composeVideoOraculoMP4(oracle.cards,oracle.globalInterp,oracleEffectiveDeckName(),txt=>{const m=/(\d+)%/.exec(String(txt||''));updateProg(txt||'🎬 Componiendo video…',m?26+(+m[1])*0.72:30,'')},signal,null,vozOpts);
     signal.throwIfAborted();
     const nombre='oraculo-'+oracleEffectiveDeckName().replace(/[^\w]+/g,'-')+'-'+Date.now()+'.mp4';
@@ -13105,11 +13473,11 @@ async function oracleExportVideo(){
     const url=URL.createObjectURL(blob);
     const pv=document.getElementById('progPreview');
     if(pv){pv.classList.add('on');pv.innerHTML='<video controls src="'+url+'" style="width:100%;max-height:280px;border-radius:8px"></video><p style="margin-top:8px;font-size:11px;color:var(--muted)">MP4 con escenas de imágenes · descargado como '+nombre+'</p><button class="mini-btn primary" style="margin-top:6px" onclick="downloadBlob(oracleUltimos.video.blob, oracleUltimos.video.nombre)">⬇ Descargar MP4 otra vez</button>'}
-    const elV=appendMsg('assistant','**Vídeo del oráculo** listo y descargado.\nCada lectura va repartida en escenas con las imágenes de las cartas. Sin texto en pantalla.'+(sinVoz.size?'\nSin voz en '+sinVoz.size+' escena(s): las voces no respondieron a tiempo y esas escenas van en silencio.':''),{modelName:'Oráculo'});
+    const elV=appendMsg('assistant','**Vídeo del oráculo** listo y descargado.\nCada lectura va repartida en escenas con las imágenes de las cartas. Sin texto en pantalla.'+(sinVoz.size?'\n⚠️ Sin voz en '+sinVoz.size+' escena(s): '+[...sinVoz].slice(0,4).join(' · ')+(sinVoz.size>4?' …':'')+'\nSi Edge responde HTTP 403, es su corte de las voces gratuitas: prueba otra vez con internet estable o cambia la voz del desplegable.':''),{modelName:'Oráculo'});
     const v2=document.createElement('video');v2.controls=true;v2.src=url;v2.style.cssText='width:100%;max-width:560px;border-radius:8px;margin-top:6px';
     elV.querySelector('.msg-content').appendChild(v2);
     await mdvSleep(2000);hideProg();
-    toast('MP4 descargado · '+nombre+(sinVoz.size?' · sin voz en '+sinVoz.size+' escena(s)':''));
+    toast('MP4 descargado · '+nombre+(sinVoz.size?' · SIN VOZ en '+sinVoz.size+' escena(s)':''));
   }catch(e){if(!iniciado){toast(e.message || 'Preparación cancelada');return;}if(e.name==='AbortError'){updateProg('Cancelado',0,'');await mdvSleep(800);hideProg()}else{updateProg('❌ Error',0,e.message);await mdvSleep(2500);hideProg()}}finally{oracle.currentAbort=null}}
 /* ═════════ CHAT → TIRADA COMPLETA · preguntas, lecturas, imágenes, WAV y MP4 ═════════ */
 let mdvTiradaFlow = null;
@@ -13278,8 +13646,24 @@ async function mdvEnriquecerTodas(cards, signal, onProg, opciones){
     const paso = () => '✨ Lectura profunda ' + (i + 1) + '/' + cards.length + ': ' + c.data[2] + ' · ' + mdvFmtSeg((Date.now() - desde) / 1000);
     if(onProg) onProg(paso());
     const latido = setInterval(() => { try{ if(onProg) onProg(paso()); }catch(_){} }, 1000);
+    let ronda = 0;
     try{
-      await oracleEnriquecerCarta(c,cards,signal,opciones);
+      while(true){
+        try{
+          await oracleEnriquecerCarta(c,cards,signal,opciones);
+          break;
+        }catch(e2){
+          if(e2 && e2.name === 'AbortError') throw e2;
+          if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
+          const espera = [15000,30000,45000,60000,90000,120000][Math.min(ronda,5)];
+          ronda++;
+          const aviso = '\u2728 ' + c.data[2] + ': interpretacion no llego (' + ((e2 && e2.message) || 'sin respuesta') + ') \u00b7 reintentando (intentos: ' + ronda + ') en ' + Math.round(espera/1000) + ' s \u00b7 seguira hasta completarla (puedes detener)';
+          try{ toast('\ud83d\udd01 ' + aviso); }catch(_){ }
+          try{ onProg?.(aviso); }catch(_){ }
+          await new Promise(r => setTimeout(r, espera));
+          if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
+        }
+      }
       hechas++;
     }catch(e){ if(e && e.name === 'AbortError') throw e; }
     finally{ clearInterval(latido); }
@@ -13312,9 +13696,24 @@ async function mdvImagenesTodas(cards,signal,onProg,batch){
     if(c.imgBlob) continue;
     batch ||= oracleImageBatch();
     onProg?.('🎨 Imagen '+(i+1)+'/'+cards.length+': '+c.data[2],i/cards.length);
-    const result = await oracleGenImage(c,signal,batch);
-    signal?.throwIfAborted();
-    await oracleGuardarFoto(c,result);
+    let result = null, rondasImg = 0;
+    while(true){
+      if(!result || (result.name === 'Imagen local' && batch.online && webMode !== 'off')){
+        if(result){
+          rondasImg++;
+          const esperaImg=[15000,30000,45000,60000,90000,120000][Math.min(rondasImg-1,5)];
+          try{toast('\ud83d\udd01 Imagen '+(i+1)+' ('+c.data[2]+'): los generadores no llegaron \u00b7 reintentando (intentos: '+rondasImg+') en '+Math.round(esperaImg/1000)+' s \u00b7 seguira hasta conseguirla')}catch(_){ }
+          try{onProg?.('\ud83d\udd01 Imagen '+(i+1)+'/'+cards.length+': reintentando (intentos: '+rondasImg+')',i/cards.length)}catch(_){ }
+          await new Promise(r=>setTimeout(r,esperaImg));
+          batch.failed.clear();
+        }
+        if(signal?.aborted) throw new DOMException('Detenido','AbortError');
+        result = await oracleGenImage(c,signal,batch);
+        signal?.throwIfAborted();
+        if(result && (result.name !== 'Imagen local' || !batch.online || webMode === 'off')) break;
+      }else break;
+    }
+    if(result) await oracleGuardarFoto(c,result);
     renderOracleCards();
   }
 }
@@ -13382,6 +13781,14 @@ async function mdvEscribirOraculoPC(plan, videoBlob, videoName, texto){
     for(const s of plan.sums){ await wsRawWrite(dir + 'lectura-mazo-' + mdvSlug(s.dn) + '.wav', s.wav); n++; }
     if(plan.global){ await wsRawWrite(dir + 'lectura-' + mdvSlug(oracleLecturaPalabra()) + '.wav', plan.global.wav); n++; }
     if(plan.fullWav){ await wsRawWrite(dir + 'oraculo-completo.wav', plan.fullWav); n++; }
+    try{
+      const todas = await galIdbAll();
+      for(const it of (todas || [])){
+        if(it && String(it.uid || '').length > 4 && it.uid.indexOf('voz_') === 0 && /^[a-z0-9_]+$/.test(it.uid) && it.blob instanceof Blob && it.blob.size){
+          await wsRawWrite('mdv_galeria/' + (it.nombre || it.uid + '.wav'), it.blob); n++;
+        }
+      }
+    }catch(_){ }
     if(texto){ await wsRawWrite(dir + 'oraculo.txt', texto); n++; }
     if(videoBlob){ await wsRawWrite(dir + (videoName || 'oraculo.mp4'), videoBlob); n++; }
     return {ok:true, dir, n};
@@ -13427,7 +13834,7 @@ async function mdvTiradaCompleta(p, resumen){
     // Las imágenes no dependen de la interpretación: se descargan a la vez que las lecturas.
     const imgJob = mdvImagenesTodas(oracle.cards, signal, (t, f) => { imgTxt = t; imgProg = f || 0; }).then(() => null, e => e);
     updateProg('🧠 Lecturas profundas…', 5, getActive() ? '' : 'Sin modelo activo');
-    const lecturaOpts = {sinCascada:true, plazoMs:180000};
+    const lecturaOpts = {sinCascada:true, plazoMs:86400000};
     const enr = await mdvEnriquecerTodas(oracle.cards, signal, t => {
       const m = /(\d+)\/(\d+)/.exec(t);
       updateProg(t, m ? 5 + (+m[1] / +m[2]) * 11 : 8, '');
@@ -13448,7 +13855,7 @@ async function mdvTiradaCompleta(p, resumen){
     oracleConfirmarLecturas(oracle.cards);
     updateProg('🔊 Voz de todas las cartas…', 43, '');
     const sinVoz = new Set();
-    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et)};
+    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et), onRecuperado:n => { for(const s of [...sinVoz]){ if(s.indexOf(n + ':') === 0) sinVoz.delete(s); } }};
     const plan = await mdvPlanAudioOraculo(oracle.cards, mdvVozActual(), signal, (t, f) => updateProg(t, 43 + (f || 0) * 28, ''), vozOpts);
     const fullName = 'oraculo-' + mdvSlug(oracleEffectiveDeckName()) + '-completo-' + Date.now() + '.wav';
     const itW = await galGuardar({kind:'audio', blob:plan.fullWav, nombre:fullName, prov:'oráculo completo · ' + total + ' cartas', t:Date.now()});
@@ -13474,7 +13881,7 @@ async function mdvTiradaCompleta(p, resumen){
       '**Tirada completa** · ' + resumen + '\n' + total + ' cartas · ' + enr.hechas + ' lecturas profundas · ' + leidas + ' lecturas de mazo · lectura global ' + (globalOk ? 'incluida' : 'no disponible') + '.\n' +
       (pc.ok ? 'Todo guardado en `' + pc.dir + '` (' + pc.n + ' archivos: imágenes, WAV por carta, WAV por mazo, WAV global, texto y MP4) y en la galería.\n' : (pc.reason === 'sin-carpeta' ? 'No hay carpeta elegida: todo queda en la galería. Elige carpeta en Archivos del PC para tenerlo también en disco.\n' : 'No se pudo escribir en la carpeta (' + pc.reason + '): todo queda en la galería.\n')) +
       'WAV completo y MP4 descargados.' +
-      (sinVoz.size ? '\nSin voz en ' + sinVoz.size + ' escena(s): las voces no respondieron a tiempo y esas escenas van en silencio.' : ''), {modelName:'Oráculo'});
+      (sinVoz.size ? '\n⚠️ Sin voz en ' + sinVoz.size + ' escena(s): ' + [...sinVoz].slice(0, 4).join(' · ') + (sinVoz.size > 4 ? ' …' : '') : ''), {modelName:'Oráculo'});
     const body = el && el.querySelector ? el.querySelector('.msg-content') : null;
     if(body){
       if(itW && itW.url){ const a = document.createElement('audio'); a.controls = true; a.preload = 'metadata'; a.src = itW.url; a.style.cssText = 'width:100%;margin-top:8px'; body.appendChild(a); }
@@ -13609,6 +14016,13 @@ scanLocals();
 setTimeout(autoRestoreSingle,1200);
 window.addEventListener('beforeunload', () => { if(window.mdvRestaurandoCasa)return;try{ saveActiveProfile(false); }catch(_){} });
 setTimeout(() => copiaDiaria(true), 6000); /* copia de seguridad diaria al arrancar (si hay carpeta) */
+setTimeout(() => {
+  try{
+    const bytes = JSON.stringify(localStorage).length;
+    const pct = Math.round(bytes / (5*1024*1024) * 100);
+    if(pct >= 80) toast('⚠️ Memoria del navegador al ' + pct + '%: archiva o limpia chats viejos (Ajustes) para no perder nada');
+  }catch(_){}
+}, 9000); /* guardian de cuota: aviso si localStorage pasa del 80% */
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && !$('#engineModal').hidden) closeEngineModal();
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); openEngineModal(); }
