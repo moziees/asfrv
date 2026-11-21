@@ -2,7 +2,7 @@
 <html lang="es" data-accent=""><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mar de Vidrio · V1.1.94</title>
+<title>Mar de Vidrio · V2.0.02 · PR-1</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -2113,7 +2113,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   <main class="main-area">
     <header class="topbar">
       <div class="topbar-left">
-        <span id="chatTitle">Mar de Vidrio · V1.1.94</span>
+        <span id="chatTitle">Mar de Vidrio · V2.0.02 · PR-1</span>
         <button class="prof-chip" id="profChip" onclick="togglePanel('perfiles')" title="Perfil activo · pulsa para cambiar" hidden=""></button>
       </div>
       <div class="topbar-actions" aria-label="Acciones del chat">
@@ -11304,7 +11304,7 @@ function updateChatTitle(){
   const el = document.getElementById('chatTitle');
   if(!el) return;
   const c = currentChatId ? loadChats().find(x => x.id === currentChatId) : null;
-  el.textContent = c ? (c.title || 'Chat') : 'Mar de Vidrio · V1.1.94';
+  el.textContent = c ? (c.title || 'Chat') : 'Mar de Vidrio · V2.0.02 · PR-1';
 }
 function renderChatList(){
   const box = document.getElementById('chatList'); if(!box) return;
