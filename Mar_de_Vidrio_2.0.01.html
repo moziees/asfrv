@@ -2154,7 +2154,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 <div class="msg-bubble">
                   <b>Tus IA locales se detectan solas.</b><br><br>
                   Pulsa <b>Motores y modelos</b> y verás los motores locales que tengas encendidos, más LM Studio, Jan, llama.cpp, vLLM y KoboldCpp. Elige motor y modelo, y escribe.<br><br>
-                  <b>Gratis sin clave</b>: el motor <b>Automático · gratis</b> prueba Pollinations, LLM7, OVHcloud, Kilo y AI Horde en orden y usa el primero que conteste. Los demás gratuitos (Groq, Gemini, OpenRouter…) solo piden que pegues su clave en el mismo panel.<br><br>
+                  <b>Gratis sin clave</b>: el motor <b>Automático · gratis</b> prueba Pollinations, LLM7, OVHcloud, AI Horde y Kilo en orden y usa el primero que conteste. Los demás gratuitos (Groq, Gemini, OpenRouter…) solo piden que pegues su clave en el mismo panel.<br><br>
                   <b>Mesa Redonda</b>: en el menú lateral, marca dos o más modelos (locales o en la nube), actívala y pregunta. Cada pregunta es una ronda; al final puedes pedir la <b>Síntesis</b>.<br><br>
                   <b>Archivos del PC</b>: elige una carpeta en el menú lateral. El botón del <b>escudo</b> (junto al ＋) manda sobre todo: tiene los 3 modos <b>Solo leer</b>, <b>Bajo confirmación</b> y <b>Control total del PC</b> (escribe, ejecuta, crea entregables y navega sin preguntar), y dentro están también el <b>Modo agente</b> y la carpeta.<br><br>
                   <b>El menú ＋</b>: archivos, carpeta (nivel 1), captura de pantalla, las 3 opciones de internet (y buscar en GitHub o Hugging Face), el motor activo y exportar (conversación o ajustes). Con Control total la IA local puede usar la consola de la app para hacer cálculos o consultas por su cuenta. La lectura web es solo lectura: no entra en webs con contraseña ni paga. Tus conversaciones se guardan solas en <b>Chats</b>, en el menú lateral.
@@ -5677,9 +5677,9 @@ let scanPromise = null;
 const AUTO_ENTRY = {
   id:'autofree', group:'free', engine:'autofree', name:'Automático · gratis',
   url:'', model:'', key:'', type:'cascade',
-  hint:'Prueba Pollinations, LLM7, OVHcloud, Kilo y AI Horde en orden y usa el primero que responda. Sin clave.'
+  hint:'Prueba Pollinations, LLM7, OVHcloud, AI Horde y Kilo en orden y usa el primero que responda. Sin clave.'
 };
-const FREE_ORDER = ['pollinationsfree','llm7','ovh','kilo','aihorde'];
+const FREE_ORDER = ['pollinationsfree','llm7','ovh','aihorde','kilo'];
 
 function seedModels(){
   models = [];
