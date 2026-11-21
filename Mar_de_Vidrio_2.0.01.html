@@ -5449,6 +5449,8 @@ const CLOUD_DEFAULTS = [
    hint:'Clave gratis en aistudio.google.com/apikey'},
   {id:'mistral', group:'online', engine:'mistral', name:'Mistral', url:'https://api.mistral.ai/v1/chat/completions', model:'mistral-small-latest', key:'', type:'openai', keyUrl:'https://console.mistral.ai',
    hint:'Capa free disponible. console.mistral.ai'},
+  {id:'mistral-code', group:'online', engine:'mistral-code', name:'Codestral (Mistral · código)', url:'https://api.mistral.ai/v1/chat/completions', model:'codestral-latest', key:'', type:'openai', keyUrl:'https://console.mistral.ai',
+   hint:'Especialista en programación de Mistral. Misma clave y capa free que Mistral.'},
   {id:'deepseek', group:'online', engine:'deepseek', name:'DeepSeek', url:'https://api.deepseek.com/v1/chat/completions', model:'deepseek-chat', key:'', type:'openai', keyUrl:'https://platform.deepseek.com/api_keys',
    hint:'Clave en platform.deepseek.com. Modelos deepseek-chat y deepseek-reasoner.'},
   {id:'cerebras', group:'online', engine:'cerebras', name:'Cerebras', url:'https://api.cerebras.ai/v1/chat/completions', model:'gpt-oss-120b', key:'', type:'openai', keyUrl:'https://cloud.cerebras.ai',
@@ -5491,6 +5493,7 @@ const catalogosRemotos={
   openrouter:['https://openrouter.ai/api/v1/models','Variantes gratuitas con clave · sujetas a cuota'],
   groq:['https://api.groq.com/openai/v1/models','Acceso y cuota según cuenta',true],
   mistral:['https://api.mistral.ai/v1/models','Acceso y cuota según cuenta',true],
+  'mistral-code':['https://api.mistral.ai/v1/models','Catálogo de Mistral · misma clave',true],
   kilo:['https://ai-gateway.kilo.ai/api/v1/models','Variantes gratuitas publicadas por Kilo'],
   aihorde:['https://aihorde.net/api/v2/status/models?type=text','Trabajadores disponibles · cola comunitaria']
 };
