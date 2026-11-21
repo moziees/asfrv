@@ -8131,7 +8131,12 @@ async function diagnostico(){
   lineas.push('· WebGPU (motor del navegador): ' + (navigator.gpu ? 'disponible' : 'no disponible'));
   lineas.push('· Voz (TTS): ' + (('speechSynthesis' in window) ? 'disponible' : 'no disponible'));
   lineas.push('· Compositor de vídeo (WebCodecs): ' + (typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' ? 'disponible' : 'no disponible en este navegador'));
-  try{ lineas.push('· Memoria del navegador: ' + wsSize(JSON.stringify(localStorage).length) + ' usados'); }catch(_){ lineas.push('· Memoria del navegador: no accesible'); }
+  try{
+    const bytes = JSON.stringify(localStorage).length;
+    const pct = Math.round(bytes / (5*1024*1024) * 100);
+    lineas.push('· Memoria del navegador (localStorage): ' + wsSize(bytes) + ' — ~' + pct + '% del techo de 5 MB');
+    if(pct >= 80) lineas.push('⚠️ Memoria casi llena (' + pct + '%): archiva o borra chats viejos para que nada se pierda');
+  }catch(_){ lineas.push('· Memoria del navegador: no accesible'); }
   lineas.push('· Chats: ' + loadChats().length + ' · Trabajos: ' + jobs.length + ' · Perfiles: ' + profiles.length + ' · Agentes: ' + agentCards.length);
   lineas.push('· Biblioteca: ' + (biblio.trozos.length ? biblio.trozos.length + ' trozos indexados' : 'sin índice') + (biblio.activa ? ' · activa en el chat y las forjas' : ''));
   lineas.push('· Galería: ' + (galeriaItems.length ? galeriaItems.length + ' pieza(s)' : 'vacía'));
@@ -8144,6 +8149,28 @@ async function diagnostico(){
     lineas.push('· Copias de seguridad: ' + (copias ? copias + ' copia(s) en mdv_copias/' : 'aún ninguna (se hace sola a diario)'));
   }else{
     lineas.push('· Copias de seguridad: requieren la carpeta del PC');
+  }
+  if(typeof webMode !== 'undefined' && webMode !== 'off'){
+    const pings = [
+      ['Google TTS', 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=es&q=hola', {method:'GET'}],
+      ['OVH voz', 'https://nvr-tts-es-es.endpoints.kepler.ai.cloud.ovh.net/api/v1/tts/text_to_audio', {method:'POST', headers:{'Content-Type':'application/json', Accept:'application/octet-stream'}, body:JSON.stringify({encoding:1, language_code:'es-ES', sample_rate_hz:16000, text:'ok', voice_name:'Spanish-ES-Female-1'})}],
+      ['Kilo', 'https://ai-gateway.kilo.ai/api/v1/models', {method:'GET'}],
+      ['OVH chat', 'https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/models', {method:'GET'}],
+      ['Pollinations', 'https://gen.pollinations.ai/text/models', {method:'GET'}],
+      ['LLM7', 'https://api.llm7.io/v1/models', {method:'GET'}],
+      ['AI Horde', 'https://aihorde.net/api/v2/status/models?type=text', {method:'GET'}]
+    ];
+    const pruebas = await Promise.allSettled(pings.map(async ([nombre, url, opts]) => {
+      const r = await fetch(url, Object.assign({}, opts, {signal: AbortSignal.timeout(9000)}));
+      return nombre + ' ' + (r.ok ? 'vivo' : 'HTTP ' + r.status);
+    }));
+    lineas.push('· Sitios vivos: ' + pruebas.map(p => p.status === 'fulfilled' ? p.value : '· fallo de red').join(' · '));
+  }
+  if(navigator.storage && navigator.storage.estimate){
+    try{
+      const {usage, quota} = await navigator.storage.estimate();
+      lineas.push('· Cuota total del origen: ' + wsSize(usage || 0) + ' usados de ' + wsSize(quota || 0) + ' (incluye galeria)');
+    }catch(_){}
   }
   appendMsg('assistant', '**Diagnóstico del sistema** · ' + new Date().toLocaleString('es-ES') + '\n' + lineas.join('\n'), {modelName: 'Diagnóstico'});
   toast('Diagnóstico generado');
@@ -13688,6 +13715,13 @@ scanLocals();
 setTimeout(autoRestoreSingle,1200);
 window.addEventListener('beforeunload', () => { if(window.mdvRestaurandoCasa)return;try{ saveActiveProfile(false); }catch(_){} });
 setTimeout(() => copiaDiaria(true), 6000); /* copia de seguridad diaria al arrancar (si hay carpeta) */
+setTimeout(() => {
+  try{
+    const bytes = JSON.stringify(localStorage).length;
+    const pct = Math.round(bytes / (5*1024*1024) * 100);
+    if(pct >= 80) toast('⚠️ Memoria del navegador al ' + pct + '%: archiva o limpia chats viejos (Ajustes) para no perder nada');
+  }catch(_){}
+}, 9000); /* guardian de cuota: aviso si localStorage pasa del 80% */
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && !$('#engineModal').hidden) closeEngineModal();
   if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); openEngineModal(); }
