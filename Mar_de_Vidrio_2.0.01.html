@@ -10308,9 +10308,36 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
   }));
   return unido;
 }
+function mdvVozClave(texto, voz, rate){
+  const s = (voz || '') + '|' + (rate || '') + '|' + texto;
+  let h = 5381;
+  for(let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return 'voz_' + h.toString(36);
+}
+async function mdvVozGuarda(buf, clave, etiqueta){
+  try{
+    const wav = audioBufferToWavBlob(buf);
+    const it = {uid: clave, t: Date.now(), blob: wav, kind: 'audio', nombre: clave + '_' + String(etiqueta || 'voz').replace(/[^\w.\-]+/g, '_').slice(-40) + '.wav', url: URL.createObjectURL(wav), temporal: false};
+    await galIdbPut(it);
+    if(!galeriaItems.some(g => g.uid === clave)){ galeriaItems.push(it); try{ renderEstudio(); }catch(_){ } }
+  }catch(_){ }
+}
+async function mdvVozLocal(clave, signal){
+  try{
+    let it = galeriaItems.find(g => g.uid === clave) || null;
+    if(!it){ const todos = await galIdbAll(); it = (todos || []).find(g => g.uid === clave) || null; }
+    if(!it || !(it.blob instanceof Blob) || !it.blob.size) return null;
+    signal?.throwIfAborted();
+    const buf = await decodificarBlob(it.blob);
+    return (buf && buf.duration > 0.4) ? buf : null;
+  }catch(_){ return null; }
+}
 async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   const limpio = String(texto || '').trim();
   if(!limpio) throw new Error((etiqueta || 'Voz') + ': sin texto');
+  const claveVoz = mdvVozClave(limpio, voz, rate);
+  const vozYaGuardada = await mdvVozLocal(claveVoz, signal);
+  if(vozYaGuardada){ try{ onProg?.((etiqueta || 'Voz') + ' \u00b7 voz guardada en el navegador'); }catch(_){ } return vozYaGuardada; }
   const intentos = [
     {n:'Edge', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'Stream', f:() => streamTTS(limpio, signal, voz)},
@@ -10332,7 +10359,7 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
     try{
       if(onProg) onProg((etiqueta || 'Voz') + (i ? ' · alternativa ' + intentos[i].n : ''));
       const buf = await decodificarBlob(await intentos[i].f());
-      if(buf && buf.duration > 0.4) return buf;
+      if(buf && buf.duration > 0.4){ try{ mdvVozGuarda(buf, claveVoz, etiqueta); }catch(_){ } return buf; }
       anotar(intentos[i].n, new Error('audio vacío'));
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
