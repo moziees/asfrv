@@ -8347,9 +8347,9 @@ async function edgeTTS(text, voice = 'es-ES-ElviraNeural', rate = '+0%', signal)
     if(!chunks[i]) continue;
     signal?.throwIfAborted();
     let part = null, ultimo = null;
-    for(let n = 0; n < 2 && !part; n++){
+    for(let n = 0; n < 3 && !part; n++){
       try{ part = await edgeTTSws(chunks[i], voice, rate, signal); }
-      catch(e){ if(e && e.name === 'AbortError') throw e; ultimo = e; if(n < 1) await mdvSleep(700); }
+      catch(e){ if(e && e.name === 'AbortError') throw e; ultimo = e; if(n < 2) await mdvSleep(700 + n * 1100); }
     }
     if(!part) throw ultimo || new Error('Edge no respondió');
     parts.push(part);
@@ -10118,7 +10118,9 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
       if(!opciones?.permitirSilencio) throw e;
-      try{ opciones.onAviso?.(nombre); }catch(_){}
+      const causa = (e && e.message) || 'no respondió';
+      try{ opciones.onAviso?.(nombre + ': ' + causa); }catch(_){}
+      try{ toast('⚠️ Voz fallo en «' + nombre + '»: ' + causa + '. Esa escena irá en silencio.'); }catch(_){}
       buffers.push(mdvBufferSilencio(bloques[i]));
     }
   }
@@ -10137,7 +10139,9 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   if(!limpio) throw new Error((etiqueta || 'Voz') + ': sin texto');
   const intentos = [
     {n:'Edge', f:() => edgeTTS(limpio, voz, rate, signal)},
+    {n:'Edge 2', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
+    {n:'Edge 3', f:() => edgeTTS(limpio, voz, rate, signal)},
     {n:'OVH', f:() => ovhNarracion(limpio, signal)}
   ];
   const fallos = [];
@@ -13105,11 +13109,11 @@ async function oracleExportVideo(){
     const url=URL.createObjectURL(blob);
     const pv=document.getElementById('progPreview');
     if(pv){pv.classList.add('on');pv.innerHTML='<video controls src="'+url+'" style="width:100%;max-height:280px;border-radius:8px"></video><p style="margin-top:8px;font-size:11px;color:var(--muted)">MP4 con escenas de imágenes · descargado como '+nombre+'</p><button class="mini-btn primary" style="margin-top:6px" onclick="downloadBlob(oracleUltimos.video.blob, oracleUltimos.video.nombre)">⬇ Descargar MP4 otra vez</button>'}
-    const elV=appendMsg('assistant','**Vídeo del oráculo** listo y descargado.\nCada lectura va repartida en escenas con las imágenes de las cartas. Sin texto en pantalla.'+(sinVoz.size?'\nSin voz en '+sinVoz.size+' escena(s): las voces no respondieron a tiempo y esas escenas van en silencio.':''),{modelName:'Oráculo'});
+    const elV=appendMsg('assistant','**Vídeo del oráculo** listo y descargado.\nCada lectura va repartida en escenas con las imágenes de las cartas. Sin texto en pantalla.'+(sinVoz.size?'\n⚠️ Sin voz en '+sinVoz.size+' escena(s): '+[...sinVoz].slice(0,4).join(' · ')+(sinVoz.size>4?' …':'')+'\nSi Edge responde HTTP 403, es su corte de las voces gratuitas: prueba otra vez con internet estable o cambia la voz del desplegable.':''),{modelName:'Oráculo'});
     const v2=document.createElement('video');v2.controls=true;v2.src=url;v2.style.cssText='width:100%;max-width:560px;border-radius:8px;margin-top:6px';
     elV.querySelector('.msg-content').appendChild(v2);
     await mdvSleep(2000);hideProg();
-    toast('MP4 descargado · '+nombre+(sinVoz.size?' · sin voz en '+sinVoz.size+' escena(s)':''));
+    toast('MP4 descargado · '+nombre+(sinVoz.size?' · SIN VOZ en '+sinVoz.size+' escena(s)':''));
   }catch(e){if(!iniciado){toast(e.message || 'Preparación cancelada');return;}if(e.name==='AbortError'){updateProg('Cancelado',0,'');await mdvSleep(800);hideProg()}else{updateProg('❌ Error',0,e.message);await mdvSleep(2500);hideProg()}}finally{oracle.currentAbort=null}}
 /* ═════════ CHAT → TIRADA COMPLETA · preguntas, lecturas, imágenes, WAV y MP4 ═════════ */
 let mdvTiradaFlow = null;
@@ -13474,7 +13478,7 @@ async function mdvTiradaCompleta(p, resumen){
       '**Tirada completa** · ' + resumen + '\n' + total + ' cartas · ' + enr.hechas + ' lecturas profundas · ' + leidas + ' lecturas de mazo · lectura global ' + (globalOk ? 'incluida' : 'no disponible') + '.\n' +
       (pc.ok ? 'Todo guardado en `' + pc.dir + '` (' + pc.n + ' archivos: imágenes, WAV por carta, WAV por mazo, WAV global, texto y MP4) y en la galería.\n' : (pc.reason === 'sin-carpeta' ? 'No hay carpeta elegida: todo queda en la galería. Elige carpeta en Archivos del PC para tenerlo también en disco.\n' : 'No se pudo escribir en la carpeta (' + pc.reason + '): todo queda en la galería.\n')) +
       'WAV completo y MP4 descargados.' +
-      (sinVoz.size ? '\nSin voz en ' + sinVoz.size + ' escena(s): las voces no respondieron a tiempo y esas escenas van en silencio.' : ''), {modelName:'Oráculo'});
+      (sinVoz.size ? '\n⚠️ Sin voz en ' + sinVoz.size + ' escena(s): ' + [...sinVoz].slice(0, 4).join(' · ') + (sinVoz.size > 4 ? ' …' : '') : ''), {modelName:'Oráculo'});
     const body = el && el.querySelector ? el.querySelector('.msg-content') : null;
     if(body){
       if(itW && itW.url){ const a = document.createElement('audio'); a.controls = true; a.preload = 'metadata'; a.src = itW.url; a.style.cssText = 'width:100%;margin-top:8px'; body.appendChild(a); }
