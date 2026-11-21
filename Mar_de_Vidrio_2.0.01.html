@@ -10301,6 +10301,36 @@ async function decodificarBlob(blob){
   finally{ try{ ac.close(); }catch(_){}}
 }
 const oracleBloquesNarracion = new WeakMap();
+const vozPendientes = [];
+async function vozRecuperarPendientes(signal, onProg){
+  while(vozPendientes.length){
+    signal?.throwIfAborted();
+    const quedan = vozPendientes.length;
+    try{ onProg && onProg('Reconectando ' + quedan + ' voz(es) hasta terminar la exportación: ' + vozPendientes.map(p => p.nombre).slice(0, 3).join(' · ')); }catch(_){ }
+    try{ toast('🔁 Reconectando ' + quedan + ' voz(es) hasta terminar la exportación'); }catch(_){ }
+    let logradas = 0;
+    for(let k = vozPendientes.length - 1; k >= 0; k--){
+      signal?.throwIfAborted();
+      const p = vozPendientes[k];
+      try{
+        await p.run(signal || p.signal);
+        vozPendientes.splice(k, 1);
+        logradas++;
+        try{ toast('✅ Voz recuperada («' + p.nombre + '»); quedan ' + vozPendientes.length); }catch(_){ }
+      }catch(e){
+        if(e && e.name === 'AbortError') throw e;
+      }
+    }
+    if(vozPendientes.length && !logradas){
+      try{ onProg && onProg('Aún sin voz (' + vozPendientes.length + ' pendientes) · nueva ronda en 60 s; no se da por terminada sin ellas'); }catch(_){ }
+      try{ toast('🔁 ' + vozPendientes.length + ' voz(es) sin conseguir · nueva ronda en 60 s'); }catch(_){ }
+      try{ await oracleEsperar(mdvSleep(60000), signal); }catch(_){ break; }
+    }
+  }
+  if(vozPendientes.length){
+    try{ toast('⚠️ ' + vozPendientes.length + ' voz(es) quedaron en silencio'); }catch(_){ }
+  }
+}
 function mdvBufferSilencio(texto){
   const SR = 24000;
   const dur = Math.max(1.5, Math.min(120, String(texto || '').length / 14));
@@ -10319,12 +10349,13 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
       if(e && e.name === 'AbortError') throw e;
       if(!opciones?.permitirSilencio) throw e;
       const causa = (e && e.message) || 'no respondió';
+      const slot = buffers.length;
+      buffers.push(mdvBufferSilencio(bloques[i]));
       let recuperado = null;
       let ronda = 0;
-      while(!recuperado){
-        const PLANO = [15000, 30000, 45000, 60000, 90000, 120000];
-        const espera = PLANO[ronda % PLANO.length];
-        const aviso = nombre + ': ' + causa + ' · reconectando en automático (intento ' + (ronda + 1) + ', espera ' + Math.round(espera / 1000) + ' s) · seguirá hasta conseguir la voz completa; puedes parar la exportación cuando quieras';
+      while(ronda < 3 && !recuperado){
+        const espera = [15000, 30000, 45000][ronda];
+        const aviso = nombre + ': ' + causa + ' · reconectando en automático (intento ' + (ronda + 1) + ', espera ' + Math.round(espera / 1000) + ' s)';
         try{ opciones.onAviso?.(aviso); }catch(_){ }
         try{ toast('🔁 ' + aviso); }catch(_){ }
         try{ await oracleEsperar(mdvSleep(espera), signal); }catch(_){ break; }
@@ -10332,18 +10363,22 @@ async function vozBufferFiable(texto, voz, rate, etiqueta, signal, onProg, opcio
         try{ recuperado = await oracleVozBloque(bloques[i], voz, rate, nombre, signal, onProg); }catch(re){ if(re && re.name === 'AbortError') throw re; }
         ronda++;
       }
-      signal?.throwIfAborted();
       if(recuperado){
+        buffers[slot] = recuperado;
         try{ opciones.onAviso?.(nombre + ': reconectado, la escena sigue con voz'); }catch(_){ }
         try{ toast('✅ Voz reconectada en «' + nombre + '»'); }catch(_){ }
-        buffers.push(recuperado);
       }else{
         try{ opciones.onAviso?.(nombre + ': ' + causa); }catch(_){ }
-        try{ toast('⚠️ Voz fallo en «' + nombre + '»: ' + causa + '. Esa escena irá en silencio.'); }catch(_){ }
-        buffers.push(mdvBufferSilencio(bloques[i]));
+        try{ toast('⏭ ' + nombre + ' avanza en silencio; la voz se reclama al final hasta conseguirla'); }catch(_){ }
+        vozPendientes.push({nombre: nombre, signal: signal, run: async (senyal) => {
+          const b = await oracleVozBloque(bloques[i], voz, rate, nombre, senyal || signal, onProg);
+          buffers[slot] = b;
+          try{ opciones.onRecuperado?.(nombre); }catch(_){ }
+        }});
       }
     }
   }
+  if(vozPendientes.length) await vozRecuperarPendientes(signal, onProg);
   signal?.throwIfAborted();
   const unido = buffers.length === 1 ? buffers[0] : await unirAudioBuffers(buffers, 0);
   let inicio = 0;
@@ -10579,6 +10614,12 @@ async function composeVideoOraculoMP4(cards, globalInterp, deckName, act, signal
   for(let i = 0; i < cards.length; i++){
     const pc = plan && plan.cards ? plan.cards[i] : null;
     let buf = pc && pc.baseBuf ? pc.baseBuf : null;
+    if(!buf){
+      try{
+        const ab = cards[i].audioBlob;
+        if(ab && ab.type === 'audio/wav'){ buf = await decodificarBlob(ab); if(!buf || !(buf.duration > 0.4)) buf = null; }
+      }catch(_){ buf = null; }
+    }
     if(!buf){
       oracleProg(act, '🔊 Narración ' + (i + 1) + '/' + cards.length + ': ' + cards[i].data[2]);
       buf = await vozBufferFiable(textoParaVoz(cardToText(cards[i])), voz, '+0%', 'Carta ' + (i + 1) + ' · ' + cards[i].data[2], signal, t => oracleProg(act, '🔊 ' + t), vozOpts);
@@ -13359,7 +13400,7 @@ async function oracleExportVideo(){
     await oraclePrepararVideo(oracle.cards,controller,imageBatch);
     updateProg('🎬 Componiendo video…',26,window.VideoEncoder?'WebCodecs · MP4':'no disponible');
     const sinVoz = new Set();
-    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et)};
+    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et), onRecuperado:n => { for(const s of [...sinVoz]){ if(s.indexOf(n + ':') === 0) sinVoz.delete(s); } }};
     const blob=await composeVideoOraculoMP4(oracle.cards,oracle.globalInterp,oracleEffectiveDeckName(),txt=>{const m=/(\d+)%/.exec(String(txt||''));updateProg(txt||'🎬 Componiendo video…',m?26+(+m[1])*0.72:30,'')},signal,null,vozOpts);
     signal.throwIfAborted();
     const nombre='oraculo-'+oracleEffectiveDeckName().replace(/[^\w]+/g,'-')+'-'+Date.now()+'.mp4';
@@ -13622,8 +13663,16 @@ async function mdvPlanAudioOraculo(cards, voz, signal, onProg, vozOpts){
   for(let i = 0; i < cards.length; i++){
     const c = cards[i];
     n++;
-    const baseBuf = await vozBufferFiable(textoParaVoz(cardToText(c)), voz, '+0%', 'Carta ' + (i + 1) + ' · ' + c.data[2], signal,
-      t => onProg && onProg('🔊 ' + t, (n - 1) / Math.max(1, total)), vozOpts);
+    let baseBuf = null;
+    try{
+      if(c.audioBlob && c.audioBlob.type === 'audio/wav'){ baseBuf = await decodificarBlob(c.audioBlob); if(!baseBuf || !(baseBuf.duration > 0.4)) baseBuf = null; }
+    }catch(_){ baseBuf = null; }
+    if(!baseBuf){
+      baseBuf = await vozBufferFiable(textoParaVoz(cardToText(c)), voz, '+0%', 'Carta ' + (i + 1) + ' · ' + c.data[2], signal,
+        t => onProg && onProg('🔊 ' + t, (n - 1) / Math.max(1, total)), vozOpts);
+    }else{
+      try{ onProg && onProg('🔊 Carta ' + (i + 1) + ' · ' + c.data[2] + ' · voz del navegador', (n - 1) / Math.max(1, total)); }catch(_){ }
+    }
     let enhBuf = null;
     if(c.enhancedInterp){
       n++;
@@ -13744,7 +13793,7 @@ async function mdvTiradaCompleta(p, resumen){
     oracleConfirmarLecturas(oracle.cards);
     updateProg('🔊 Voz de todas las cartas…', 43, '');
     const sinVoz = new Set();
-    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et)};
+    const vozOpts = {permitirSilencio:true, onAviso:et => sinVoz.add(et), onRecuperado:n => { for(const s of [...sinVoz]){ if(s.indexOf(n + ':') === 0) sinVoz.delete(s); } }};
     const plan = await mdvPlanAudioOraculo(oracle.cards, mdvVozActual(), signal, (t, f) => updateProg(t, 43 + (f || 0) * 28, ''), vozOpts);
     const fullName = 'oraculo-' + mdvSlug(oracleEffectiveDeckName()) + '-completo-' + Date.now() + '.wav';
     const itW = await galGuardar({kind:'audio', blob:plan.fullWav, nombre:fullName, prov:'oráculo completo · ' + total + ' cartas', t:Date.now()});
