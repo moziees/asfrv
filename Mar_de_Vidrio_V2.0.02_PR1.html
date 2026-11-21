@@ -8732,6 +8732,7 @@ async function googleTTSBlobProxy(text, signal){
   }
   return new Blob(parts, {type:'audio/mpeg'});
 }
+const geminiTTSCache = {models: []};
 async function geminiTTSWav(texto, signal){
   if(webMode === 'off') throw new Error('Internet apagado');
   const g = models.find(m => m.id === 'gemini');
@@ -8741,10 +8742,24 @@ async function geminiTTSWav(texto, signal){
   const cuerpo = JSON.stringify({contents:[{parts:[{text: String(texto || '')}]}], generationConfig:{responseModalities:['AUDIO'], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Kore'}}}}});
   const cabeceras = {'Content-Type':'application/json', 'x-goog-api-key': g.key};
   let r = null;
-  for(const modelo of ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts']){
+  let lista = (geminiTTSCache.models || []).slice();
+  if(!lista.length){
+    try{
+      const lr = await fetch(url.replace(/\/+$/, '') + '?pageSize=1000', {headers:cabeceras, signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+      if(lr.ok){
+        const lj = await lr.json();
+        const nombres = ((lj.models || []) || []).map(x => String(x.name || '').replace(/^models\//, ''))
+          .filter(n => /tts/i.test(n) && !/dialog|native.?dialog/i.test(n));
+        geminiTTSCache.models = nombres;
+        lista = nombres.sort((a, b) => b.localeCompare(a, undefined, {numeric:true}));
+      }
+    }catch(_){ }
+  }
+  const candidatos = lista.length ? lista : ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
+  for(const modelo of candidatos){
     r = await fetch(url + modelo + ':generateContent', {method:'POST', headers:cabeceras, body:cuerpo, signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
     if(r.ok) break;
-    if(r.status !== 404) throw new Error('Gemini TTS: HTTP ' + r.status);
+    if(r.status !== 404 && r.status !== 400) throw new Error('Gemini TTS: HTTP ' + r.status);
   }
   if(!r || !r.ok) throw new Error('Gemini TTS: HTTP ' + (r ? r.status : 'sin respuesta'));
   const j = await r.json();
@@ -10474,9 +10489,9 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   const vozYaGuardada = await mdvVozLocal(claveVoz, signal);
   if(vozYaGuardada){ try{ onProg?.((etiqueta || 'Voz') + ' \u00b7 voz guardada en el navegador'); }catch(_){ } return vozYaGuardada; }
   const intentos = [
+    {n:'Google Proxy', f:() => googleTTSBlobProxy(limpio, signal)},
     {n:'Stream', f:() => streamTTS(limpio, signal, voz)},
     {n:'OVH', f:() => ovhNarracion(limpio, signal)},
-    {n:'Google Proxy', f:() => googleTTSBlobProxy(limpio, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
     {n:'Stream 2', f:() => streamTTS(limpio, signal, voz)},
     {n:'OVH 2', f:() => ovhNarracion(limpio, signal)},
@@ -13766,6 +13781,14 @@ async function mdvEscribirOraculoPC(plan, videoBlob, videoName, texto){
     for(const s of plan.sums){ await wsRawWrite(dir + 'lectura-mazo-' + mdvSlug(s.dn) + '.wav', s.wav); n++; }
     if(plan.global){ await wsRawWrite(dir + 'lectura-' + mdvSlug(oracleLecturaPalabra()) + '.wav', plan.global.wav); n++; }
     if(plan.fullWav){ await wsRawWrite(dir + 'oraculo-completo.wav', plan.fullWav); n++; }
+    try{
+      const todas = await galIdbAll();
+      for(const it of (todas || [])){
+        if(it && String(it.uid || '').length > 4 && it.uid.indexOf('voz_') === 0 && /^[a-z0-9_]+$/.test(it.uid) && it.blob instanceof Blob && it.blob.size){
+          await wsRawWrite('mdv_galeria/' + (it.nombre || it.uid + '.wav'), it.blob); n++;
+        }
+      }
+    }catch(_){ }
     if(texto){ await wsRawWrite(dir + 'oraculo.txt', texto); n++; }
     if(videoBlob){ await wsRawWrite(dir + (videoName || 'oraculo.mp4'), videoBlob); n++; }
     return {ok:true, dir, n};
