@@ -8710,6 +8710,24 @@ async function googleTTSBlob(text, signal){
   }
   return new Blob(parts, {type:'audio/mpeg'});
 }
+async function googleTTSBlobProxy(text, signal){
+  if(webMode === 'off') throw new Error('Internet apagado');
+  const chunks = ttsChunks(String(text || ''), 180);
+  const parts = [];
+  for(let i = 0; i < chunks.length; i++){
+    if(!chunks[i]) continue;
+    signal?.throwIfAborted();
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=es&q=' + encodeURIComponent(chunks[i]);
+    const plazo = AbortSignal.timeout(20000);
+    const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url), {cache:'no-store', signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+    if(!r.ok) throw new Error('TTS de Google (proxy): HTTP ' + r.status);
+    const b = await r.blob();
+    if(!b.type.startsWith('audio')) throw new Error('TTS de Google (proxy) no devolvió audio');
+    parts.push(b);
+    if(i < chunks.length - 1) await mdvSleep(150);
+  }
+  return new Blob(parts, {type:'audio/mpeg'});
+}
 const OVH_TTS_URL = 'https://nvr-tts-es-es.endpoints.kepler.ai.cloud.ovh.net/api/v1/tts/text_to_audio';
 function ovhTtsBody(text){
   return JSON.stringify({encoding:1, language_code:'es-ES', sample_rate_hz:16000, text, voice_name:'Spanish-ES-Female-1'});
@@ -10422,6 +10440,7 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
   const intentos = [
     {n:'Stream', f:() => streamTTS(limpio, signal, voz)},
     {n:'OVH', f:() => ovhNarracion(limpio, signal)},
+    {n:'Google Proxy', f:() => googleTTSBlobProxy(limpio, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
     {n:'Stream 2', f:() => streamTTS(limpio, signal, voz)},
     {n:'OVH 2', f:() => ovhNarracion(limpio, signal)}
