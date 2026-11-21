@@ -8732,6 +8732,38 @@ async function googleTTSBlobProxy(text, signal){
   }
   return new Blob(parts, {type:'audio/mpeg'});
 }
+async function geminiTTSWav(texto, signal){
+  if(webMode === 'off') throw new Error('Internet apagado');
+  const g = models.find(m => m.id === 'gemini');
+  if(!g || !g.key) throw new Error('Sin clave de Gemini (ponla en Motores y modelos)');
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/';
+  const plazo = AbortSignal.timeout(90000);
+  const cuerpo = JSON.stringify({contents:[{parts:[{text: String(texto || '')}]}], generationConfig:{responseModalities:['AUDIO'], speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:'Kore'}}}}});
+  const cabeceras = {'Content-Type':'application/json', 'x-goog-api-key': g.key};
+  let r = null;
+  for(const modelo of ['gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts']){
+    r = await fetch(url + modelo + ':generateContent', {method:'POST', headers:cabeceras, body:cuerpo, signal:signal ? AbortSignal.any([signal, plazo]) : plazo});
+    if(r.ok) break;
+    if(r.status !== 404) throw new Error('Gemini TTS: HTTP ' + r.status);
+  }
+  if(!r || !r.ok) throw new Error('Gemini TTS: HTTP ' + (r ? r.status : 'sin respuesta'));
+  const j = await r.json();
+  const parte = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+  const audio = parte.find(x => x.inlineData && x.inlineData.data);
+  if(!audio) throw new Error('Gemini TTS sin audio');
+  const mime = String(audio.inlineData.mimeType || '');
+  const hz = Number((mime.match(/rate=(\d+)/) || [])[1] || 24000);
+  const pcm = Uint8Array.from(atob(audio.inlineData.data), c => c.charCodeAt(0));
+  const wav = new ArrayBuffer(44 + pcm.length);
+  const v = new DataView(wav);
+  const cad = (o, t) => { for(let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  cad(0, 'RIFF'); v.setUint32(4, 36 + pcm.length, true); cad(8, 'WAVE');
+  cad(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, hz, true); v.setUint32(28, hz * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  cad(36, 'data'); v.setUint32(40, pcm.length, true);
+  new Uint8Array(wav, 44).set(pcm);
+  return new Blob([wav], {type:'audio/wav'});
+}
 const OVH_TTS_URL = 'https://nvr-tts-es-es.endpoints.kepler.ai.cloud.ovh.net/api/v1/tts/text_to_audio';
 function ovhTtsBody(text){
   return JSON.stringify({encoding:1, language_code:'es-ES', sample_rate_hz:16000, text, voice_name:'Spanish-ES-Female-1'});
@@ -10447,7 +10479,8 @@ async function oracleVozBloque(texto, voz, rate, etiqueta, signal, onProg){
     {n:'Google Proxy', f:() => googleTTSBlobProxy(limpio, signal)},
     {n:'Google', f:() => googleTTSBlob(limpio, signal)},
     {n:'Stream 2', f:() => streamTTS(limpio, signal, voz)},
-    {n:'OVH 2', f:() => ovhNarracion(limpio, signal)}
+    {n:'OVH 2', f:() => ovhNarracion(limpio, signal)},
+    {n:'Gemini', f:() => geminiTTSWav(limpio, signal)}
   ];
   const fallos = [];
   const vistos = new Set();
