@@ -3510,13 +3510,17 @@ async function mesaSintesis(candidatos,prompt,signal){
  throw Error(errores.join(' / '));
 }
 async function withLocalRetry(m, fn, signal){
-  const R = isLocalModel(m) ? localNet.retries : 1;
-  let last = null;
-  for(let i = 0; i <= R; i++){
+  const local = isLocalModel(m);
+  let last = null, i = 0;
+  while(true){
     if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
     if(i > 0){
-      toast('⏳ Reconexión: pausa de ' + Math.round(localNet.pauseMs/1000) + ' s antes de reintentar «' + m.name + '» (' + (i+1) + '/' + (R+1) + ')');
-      await new Promise(r => setTimeout(r, localNet.pauseMs));
+      const e = last;
+      const espera = (e && e.retrySeconds) ? Math.min(120, Math.max(3, e.retrySeconds))
+        : local ? localNet.pauseMs
+        : [15000, 30000, 45000, 60000, 90000, 120000][Math.min(i - 1, 5)];
+      toast('⏳ Reconexión automática de «' + m.name + '»: intento ' + (i + 1) + ' en ' + Math.round(espera / 1000) + ' s · seguirá hasta completar la respuesta (puedes detenerla)');
+      await new Promise(r => setTimeout(r, espera));
       if(signal && signal.aborted) throw new DOMException('Detenido', 'AbortError');
     }
     try{
@@ -3526,10 +3530,16 @@ async function withLocalRetry(m, fn, signal){
     }catch(e){
       if(e && e.name === 'AbortError') throw e;
       last = e;
-      if(i >= R || !localNetRetryable(m, e)) throw e;
+      if(!reconexionTotal(e) || i >= 200) throw e;
+      i++;
     }
   }
-  throw last;
+}
+function reconexionTotal(e){
+  if(!e) return false;
+  if(e.status) return e.status === 429 || e.status >= 500;
+  if(e.idle || e.retrySeconds) return true;
+  return /Failed to fetch|NetworkError|Load failed|tardó más|no respondió|dejó de responder|Respuesta vacía|Sin respuesta/i.test(e.message || '');
 }
 function renderLocalNetInputs(){
   const f = document.getElementById('lnFirst'); if(!f) return;
