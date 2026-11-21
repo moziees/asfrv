@@ -2066,7 +2066,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             <select id="chatFondoTipo" aria-label="Tipo de fondo del chat">
               <option value="liso">Color liso</option><option value="degradado">Degradado</option>
               <option value="imagen">Imagen</option><option value="anime">Anime</option>
-              <option value="paisaje">Paisaje</option><option value="patron">Patrón</option>
+              <option value="paisaje">Paisaje</option>
+              <option value="estrellas">Estrellado</option><option value="cristal">Cristal</option>
+              <option value="marmol">Mármol</option><option value="patron">Patrón</option>
             </select>
             <input class="skin-search" type="search" id="chatFondoBuscar" placeholder="Buscar fondo del chat">
             <button type="button" class="mini-btn" id="chatFondoQuitar">Quitar fondo</button>
@@ -2917,7 +2919,10 @@ const MDV_TEMAS_CHAT={
   imagen:['Cristal','Tinta en agua','Prisma','Constelación','Papel recortado','Órbitas','Dunas abstractas','Mosaico','Flores','Piedra pulida'],
   anime:['Ciudad nocturna','Calle al atardecer','Estación','Jardín de cerezos','Aula','Festival','Ciudad junto al mar','Templo','Horizonte futurista','Camino de verano'],
   paisaje:['Cordillera','Costa','Dunas','Bosque','Lago','Valle verde','Cañón','Islas','Tundra','Cielo nocturno'],
-  patron:['Puntos','Rayas','Cuadrícula','Rombos','Tablero','Círculos','Líneas verticales','Trama cruzada','Arcos','Baldosas']
+  patron:['Puntos','Rayas','Cuadrícula','Rombos','Tablero','Círculos','Líneas verticales','Trama cruzada','Arcos','Baldosas'],
+  estrellas:['Serenidad','Perseidas','Vía Láctea','Cometa','Luna llena'],
+  cristal:['Vitrina','Pátina','Vidrio soplado','Prisma','Geoda'],
+  marmol:['Carrara','Tinta china','Ónice','Ámbar fluido','Granito']
 };
 let mdvChatFondoPagina=0;
 let mdvChatFondoAplicado='';
@@ -2978,6 +2983,46 @@ function mdvPintarFondoChat(canvas,f){
   const fondo=ctx.createLinearGradient(0,0,0,h);
   fondo.addColorStop(0,color(tono,f.tipo==='anime'?32:22));fondo.addColorStop(1,color(alterno,73));
   ctx.fillStyle=fondo;ctx.fillRect(0,0,w,h);
+  if(f.tipo==='estrellas'){
+    ctx.fillStyle=color(tono,10);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<30+n*55;i++) disco(azar(),azar()*.94,.0008+azar()*.0022,color(alterno,92,.35+azar()*.65));
+    if(n===2){const via=ctx.createLinearGradient(0,0,w,h);via.addColorStop(0,'transparent');via.addColorStop(.5,color(alterno,65,.16));via.addColorStop(1,'transparent');ctx.save();ctx.translate(w/2,h/2);ctx.rotate(-.5);ctx.fillStyle=via;ctx.fillRect(-w,-h/6,2*w,h/3);ctx.restore();}
+    if(n===3){ctx.strokeStyle=color(40,90,.7);ctx.lineWidth=Math.max(1,h/220);ctx.beginPath();ctx.moveTo(.55*w,.3*h);ctx.lineTo(.85*w,.12*h);ctx.stroke();disco(.85,.12,.012,color(45,95,1));}
+    if(n===4) disco(.76,.2,.06,color(48,30,.96));
+    for(let plano=0;plano<3;plano++){
+      const base=.74+plano*.1,puntos=[];
+      for(let i=0;i<=24;i++){const x=i/24,relieve=(Math.sin(x*(5+n)*Math.PI+plano*2)+1)*.03+azar()*.04;puntos.push([x,base-relieve]);}
+      silueta([...puntos,[1,1],[0,1]],color(plano%2?tono:alterno,10+plano*8));
+    }
+    return;
+  }
+  if(f.tipo==='cristal'){
+    ctx.fillStyle=color(tono,84);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<7+n*3;i++){
+      const cx=azar(),cy=azar(),lado=.12+azar()*.3,lados=5+Math.floor(azar()*3),rot=azar()*Math.PI;
+      ctx.save();ctx.translate(cx*w,cy*h);ctx.rotate(rot);ctx.beginPath();
+      for(let k=0;k<lados;k++){const an=Math.PI*2*k/lados,r=lado*(.6+azar()*.5);const px=Math.cos(an)*r*w,py=Math.sin(an)*r*h;k?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+      ctx.closePath();
+      ctx.fillStyle=color(alterno,55,.09+azar()*.13);ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,'+(.18+azar()*.2)+')';ctx.lineWidth=Math.max(1,h/240);ctx.stroke();
+      ctx.restore();
+    }
+    for(let i=0;i<9;i++) disco(azar(),azar(),.004+azar()*.01,'rgba(255,255,255,'+(.35+azar()*.5)+')');
+    return;
+  }
+  if(f.tipo==='marmol'){
+    ctx.fillStyle=color(alterno,90);ctx.fillRect(0,0,w,h);
+    for(let i=0;i<6;i++) disco(azar(),azar(),.2+azar()*.3,color(i%2?tono:alterno,46,.07+azar()*.06));
+    for(let i=0;i<7+n*5;i++){
+      const x0=azar();
+      ctx.strokeStyle=color(tono,18,.16+azar()*.3);
+      ctx.lineWidth=(.4+azar()*2.6)*h/150;
+      ctx.beginPath();ctx.moveTo(x0*w,0);
+      ctx.bezierCurveTo((x0-.16+azar()*.32)*w,h*.35,(x0-.12+azar()*.24)*w,h*.7,(x0-.08+azar()*.16)*w,h);
+      ctx.stroke();
+    }
+    return;
+  }
   if(f.tipo==='imagen'){
     for(let i=0;i<62;i++){
       const x=azar(),y=azar(),r=.024+azar()*.22,t=color(i%2?tono:alterno,38+azar()*52,.17+azar()*.46);
@@ -3079,7 +3124,7 @@ function mdvMostrarFondosChat(){
     });
     return boton;
   }));
-  $('#chatFondoTotal').textContent=coincide.length+' de 100 · página '+(mdvChatFondoPagina+1)+' de '+paginas;
+  $('#chatFondoTotal').textContent=coincide.length+' de '+opciones.length+' · página '+(mdvChatFondoPagina+1)+' de '+paginas;
   $('#chatFondoAnterior').disabled=mdvChatFondoPagina===0;
   $('#chatFondoSiguiente').disabled=mdvChatFondoPagina+1>=paginas;
 }
